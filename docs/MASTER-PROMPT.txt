@@ -1,0 +1,1836 @@
+# CODEX MASTER PROMPT — WM STUDIO COLLECTIVE
+## Complete Premium Fashion E-commerce Platform & Business Management System
+
+### JOUW ROL
+
+Je bent een team van ervaren softwareontwikkelaars, e-commercearchitecten, UX/UI-designers, database-engineers, securityspecialisten en experts in logistieke automatisering.
+
+Je opdracht is om een compleet, professioneel en schaalbaar e-commerceplatform te ontwikkelen voor **WM Studio Collective**.
+
+Het platform moet bestaan uit:
+
+1. Een hoogwaardige publieke kledingwebshop.
+2. Een volledig afgeschermd beheerdersdashboard.
+3. Een geavanceerd productbeheersysteem.
+4. Een geautomatiseerd releasesysteem voor nieuwe kleding.
+5. Een compleet ordermanagementsysteem.
+6. Voorraad- en magazijnbeheer.
+7. Betalingsverwerking.
+8. Verzending en verzendlabelgeneratie.
+9. Integratie met fysieke labelprinters.
+10. Retouren, terugbetalingen en klantenservice.
+11. Financiële rapportages en bedrijfsstatistieken.
+12. Beheer van meerdere zelfstandige kledinglijnen.
+13. Een contentmanagementsysteem voor de volledige website.
+
+**Dit moet een daadwerkelijk functionerende applicatie worden, geen statische demo of uitsluitend een visueel concept.**
+
+Bouw het platform gefaseerd, maar werk zo zelfstandig mogelijk door aan de implementatie.
+
+---
+
+# 1. BEDRIJFSINFORMATIE
+
+## Bedrijfsnaam
+
+WM Studio Collective
+
+Dit is voorlopig de werknaam. Alle merkgegevens moeten eenvoudig aangepast kunnen worden zonder aanpassingen op tientallen verschillende plekken in de broncode.
+
+## Oprichters
+
+Het bedrijf wordt opgericht door twee partners:
+
+**Willemijn**
+- Creatieve richting.
+- Kleding ontwerpen.
+- Collecties samenstellen.
+- Materialen, kleuren en pasvormen bepalen.
+- Productpresentatie.
+- Visuele merkidentiteit.
+
+**Max**
+- Ondernemerschap en bedrijfsvoering.
+- Webshop en technologie.
+- Marketing en verkoop.
+- Bestellingen en logistiek.
+- Financiën en rapportages.
+- Bedrijfsgroei.
+
+Beide oprichters moeten volledige toegang tot het platform kunnen krijgen.
+
+Maak de interne rolverdeling configureerbaar. Dit betekent niet dat Willemijn of Max technisch beperkt mogen worden tot bovenstaande werkzaamheden.
+
+## Bedrijfsconcept
+
+WM Studio Collective is een overkoepelend premium modehuis.
+
+Onder dit moedermerk willen we verschillende zelfstandige kledinglijnen en submerken kunnen ontwikkelen.
+
+Voorbeelden van toekomstige richtingen:
+
+- Streetwear.
+- Everyday fashion.
+- Business casual.
+- Smart casual.
+- Golfkleding.
+- Premium sportswear.
+- Eventuele toekomstige collecties.
+
+Elke kledinglijn kan een eigen naam, logo, uitstraling en collectie hebben.
+
+Toch moeten ze allemaal herkenbaar onderdeel kunnen zijn van WM Studio Collective.
+
+Het overkoepelende WM-monogram vormt de verbinding tussen de verschillende merken.
+
+## Doelgroep
+
+Mannen en vrouwen, voornamelijk tussen 16 en 25 jaar.
+
+## Marktpositionering
+
+Premium kleding met aandacht voor:
+
+- Hoogwaardige materialen.
+- Originele ontwerpen.
+- Uitstekende pasvorm.
+- Herkenbare merkidentiteit.
+- Professionele presentatie.
+- Goede klantervaring.
+
+Een T-shirt kan bijvoorbeeld tussen €50 en €80 kosten, maar prijzen moeten volledig configureerbaar zijn.
+
+## Ambitie
+
+Het bedrijf moet uiteindelijk voldoende omzet en winst kunnen genereren om beide oprichters fulltime werkzaam te laten zijn binnen het eigen kledingmerk.
+
+Ontwerp de software daarom met groei en schaalbaarheid in gedachten.
+
+---
+
+# 2. TECHNOLOGIE EN ARCHITECTUUR
+
+## Voorkeursstack
+
+Gebruik waar passend:
+
+- Next.js met App Router.
+- React.
+- TypeScript met strict mode.
+- Tailwind CSS.
+- shadcn/ui of een vergelijkbare hoogwaardige componentbibliotheek.
+- Supabase PostgreSQL.
+- Supabase Authentication.
+- Supabase Storage.
+- Row Level Security.
+- Mollie voor betalingen.
+- Sendcloud voor verzending.
+- Resend of een vergelijkbare provider voor transactionele e-mail.
+- Vercel voor hosting.
+- Zod voor validatie.
+- Een server-side jobsysteem voor releases en andere taken.
+- Playwright voor end-to-end tests.
+- Vitest voor unit- en integratietests.
+
+Controleer actuele officiële API-documentatie voordat je externe integraties implementeert.
+
+## Architectuurprincipes
+
+- Gebruik een modulaire architectuur.
+- Houd frontend en bedrijfslogica logisch gescheiden.
+- Gebruik server-side validatie.
+- Verwerk betalingen en refunds uitsluitend via vertrouwde providers.
+- Bouw herbruikbare services voor betalingen, verzending en voorraad.
+- Centraliseer configuratie.
+- Gebruik database-migraties.
+- Maak uitbreidingen eenvoudig.
+- Voorkom onnodige afhankelijkheid van één leverancier.
+
+Gebruik bestaande repositorycode als die aanwezig is. Analyseer eerst wat bruikbaar is.
+
+Verwijder geen bestaande functionaliteit zonder goede reden.
+
+## Omgevingen
+
+Ondersteun:
+
+- Development.
+- Staging.
+- Production.
+
+Echte betaal- en verzendacties mogen niet per ongeluk vanuit development of staging worden uitgevoerd.
+
+---
+
+# 3. VISUELE IDENTITEIT
+
+Ontwerp een hoogwaardige modewebsite, niet een doorsnee webwinkeltemplate.
+
+## Ontwerpstijl
+
+De uitstraling moet zijn:
+
+- Modern.
+- Minimalistisch.
+- Premium.
+- Creatief.
+- Industrieel waar passend.
+- Tijdloos.
+- Professioneel.
+
+Gebruik een rustige basis met:
+
+- Zwart.
+- Wit.
+- Gebroken wit.
+- Donkergrijs.
+- Subtiele neutrale tinten.
+
+Kledinglijnen mogen hun eigen accentkleuren krijgen.
+
+## Typografie
+
+Gebruik sterke, moderne typografie.
+
+Het WM-hoofdlogo wordt uiteindelijk een industrieel, geometrisch monogram waarin de W en M met elkaar verbonden zijn.
+
+Maak voorlopig een duidelijk vervangbaar logo-element.
+
+Presenteer een tijdelijk logo nooit als definitief goedgekeurd.
+
+## Interface
+
+- Ruime lay-outs.
+- Grote productfotografie.
+- Kwalitatieve animaties.
+- Subtiele interacties.
+- Elegante overgangen.
+- Duidelijke typografische hiërarchie.
+- Goede toegankelijkheid.
+- Volledig responsive.
+- Sterke mobiele ervaring.
+
+Vermijd overdreven animaties, willekeurige gradients en een generieke AI-dashboarduitstraling.
+
+---
+
+# 4. PUBLIEKE WEBSHOP
+
+## Pagina's
+
+Bouw minimaal:
+
+- Homepage.
+- Shop All.
+- Men.
+- Women.
+- New Arrivals.
+- Collections.
+- Brands.
+- Productdetailpagina.
+- Coming Soon.
+- Releasekalender voor klanten, indien ingeschakeld.
+- Winkelmandje.
+- Checkout.
+- Bestelbevestiging.
+- Klantaccount.
+- Wishlist.
+- Bestelgeschiedenis.
+- Retourportaal.
+- About Us.
+- Contact.
+- Veelgestelde vragen.
+- Verzending.
+- Retourbeleid.
+- Privacybeleid.
+- Algemene voorwaarden.
+- Cookievoorkeuren.
+
+Gebruik dynamische routes waar passend.
+
+## Homepage
+
+Maak een professionele modehomepage met:
+
+1. Grote hero-afbeelding of video.
+2. Uitgelichte collectie.
+3. Nieuwe producten.
+4. Aankomende releases.
+5. Verschillende kledinglijnen.
+6. Visuele merkpresentatie.
+7. Productcarousels.
+8. Optionele nieuwsbriefinschrijving.
+9. Footer met bedrijfsinformatie.
+
+Alle belangrijke homepageonderdelen moeten vanuit het dashboard aanpasbaar zijn.
+
+## Navigatie
+
+Desktop:
+
+- Ruime en overzichtelijke navigatie.
+- Dropdownmenu's.
+- Productcategorieën.
+- Kledinglijnen.
+- Zoekfunctie.
+- Account.
+- Wishlist.
+- Winkelmandje.
+
+Mobiel:
+
+- Professioneel uitschuifmenu.
+- Touchvriendelijke bediening.
+- Goede productfilters.
+- Snelle checkout.
+
+---
+
+# 5. SUBMERKEN EN KLEDINGLIJNEN
+
+Bouw een systeem om meerdere kledingmerken vanuit één beheeromgeving te beheren.
+
+Iedere kledinglijn moet beschikken over:
+
+- Eigen naam.
+- Eigen URL-slug.
+- Eigen logo.
+- Eigen beschrijving.
+- Eigen afbeeldingen.
+- Eigen kleuren.
+- Eigen typografie indien gewenst.
+- Eigen productcategorieën.
+- Eigen collecties.
+- Eigen landingspagina.
+- Eigen SEO-instellingen.
+- Eigen merchandising.
+- Eigen releases.
+
+Alle kledinglijnen gebruiken in eerste instantie:
+
+- Eén gezamenlijke checkout.
+- Eén orderdatabase.
+- Eén voorraadadministratie.
+- Eén klantenadministratie.
+- Eén financieel overzicht.
+
+Maak verkoop per kledinglijn afzonderlijk inzichtelijk.
+
+Ontwerp de architectuur zo dat later eventueel aparte storefronts en domeinen toegevoegd kunnen worden.
+
+Bouw deze afzonderlijke storefronts voorlopig nog niet.
+
+---
+
+# 6. PRODUCTBEHEER
+
+Dit moet één van de meest uitgebreide onderdelen worden.
+
+Maak een volledig functionerende productbeheeromgeving.
+
+## Adminroutes
+
+- /admin/products
+- /admin/products/new
+- /admin/products/[id]
+- /admin/categories
+- /admin/collections
+- /admin/brands
+
+## Productenoverzicht
+
+Maak een professionele tabel met:
+
+- Productafbeelding.
+- Productnaam.
+- Productcode.
+- SKU.
+- Kledinglijn.
+- Collectie.
+- Prijs.
+- Voorraad.
+- Verkoopstatus.
+- Publicatiestatus.
+- Releasedatum.
+- Laatste wijziging.
+
+Voeg filters toe voor:
+
+- Kledinglijn.
+- Collectie.
+- Categorie.
+- Status.
+- Voorraad.
+- Prijs.
+- Releasedatum.
+
+Ondersteun zoeken, sorteren, paginering en bulkacties.
+
+## Product toevoegen
+
+Maak een uitgebreide producteditor.
+
+### Basisgegevens
+
+- Productnaam.
+- Interne productnaam.
+- Beschrijving.
+- Korte beschrijving.
+- Productcategorie.
+- Kledinglijn.
+- Collectie.
+- Tags.
+- Artikelnummer.
+- SKU.
+- Barcode.
+- Leverancier.
+- Inkoopprijs.
+- Verkoopprijs.
+- Eventuele adviesprijs.
+- Belastingcategorie.
+
+### Productmedia
+
+Ondersteun:
+
+- Meerdere afbeeldingen.
+- Video's.
+- Drag-and-drop upload.
+- Afbeeldingen herschikken.
+- Afbeeldingen bijsnijden.
+- Alternatieve afbeeldingsteksten.
+- Variantafbeeldingen.
+- Mobiele en desktopafbeeldingen.
+
+Optimaliseer afbeeldingen automatisch waar mogelijk.
+
+### Maten en kleuren
+
+Maak een variantenmatrix.
+
+Voorbeeld:
+
+| Variant | SKU | Voorraad | Prijs |
+|---|---|---:|---:|
+| Black / S | WM-001-B-S | 12 | €64,95 |
+| Black / M | WM-001-B-M | 18 | €64,95 |
+| Black / L | WM-001-B-L | 14 | €64,95 |
+| Navy / M | WM-001-N-M | 10 | €64,95 |
+
+Ondersteun:
+
+- XS tot XXL en aangepaste maten.
+- Eigen maatgroepen.
+- Kleuren.
+- Materiaalvarianten.
+- Eigen SKU per variant.
+- Eigen voorraad per variant.
+- Eigen afbeelding per variant.
+- Optioneel verschillende prijzen.
+
+### Productinformatie
+
+- Materiaal.
+- Samenstelling.
+- Pasvorm.
+- Maattabel.
+- Wasvoorschriften.
+- Land van productie indien bekend.
+- Productgewicht.
+- Verpakkingsafmetingen.
+- Duurzaamheidsclaims uitsluitend wanneer onderbouwd.
+
+### SEO
+
+- SEO-titel.
+- SEO-beschrijving.
+- URL.
+- Open Graph-afbeelding.
+- Canonical URL.
+- Product structured data.
+
+## Productstatussen
+
+Ondersteun:
+
+- Concept.
+- In ontwerp.
+- Wacht op controle.
+- Goedgekeurd.
+- Ingepland.
+- Coming Soon.
+- Gepubliceerd.
+- Uitverkocht.
+- Gearchiveerd.
+
+Beheer publicatie en voorraadstatus technisch gescheiden.
+
+---
+
+# 7. RELEASE MANAGEMENT SYSTEM
+
+DIT IS EEN KERNONDERDEEL VAN DE APPLICATIE.
+
+We willen nieuwe producten vooraf kunnen invoeren en releases automatisch laten plaatsvinden.
+
+## Release-instellingen
+
+Per product moet ingesteld kunnen worden:
+
+- Datum.
+- Tijd.
+- Tijdzone.
+- Publicatiedatum.
+- Verkoopstart.
+- Eventuele verkoopeinddatum.
+- Coming Soon-startdatum.
+- Pre-order beschikbaarheid.
+- Wachtlijst beschikbaarheid.
+- Countdown beschikbaarheid.
+
+Gebruik standaard Europe/Amsterdam als tijdzone.
+
+Sla tijdstippen intern correct op, met ondersteuning voor zomer- en wintertijd.
+
+## Automatisch publiceren
+
+Wanneer een release is ingepland:
+
+1. Het product wordt opgeslagen.
+2. Het product verschijnt indien gewenst als Coming Soon.
+3. Een aftelklok toont de resterende tijd.
+4. Op de ingestelde releasedatum wordt de verkoop automatisch geactiveerd.
+5. Vanaf dat moment kunnen klanten bestellen.
+6. De voorraad wordt correct verwerkt.
+7. Eventuele wachtlijstnotificaties worden verstuurd.
+
+Een release moet functioneren zonder dat een beheerder of klant de pagina open heeft.
+
+Gebruik een betrouwbaar server-side mechanisme.
+
+Controleer ook tijdens het afrekenen of de verkoop daadwerkelijk gestart is.
+
+Voorkom voortijdige aankopen via directe API-verzoeken.
+
+## Coming Soon
+
+Maak Coming Soon-pagina's met:
+
+- Productfoto's.
+- Productnaam.
+- Beschrijving.
+- Releasedatum.
+- Countdown.
+- Optionele prijs.
+- E-mailinschrijving.
+- Eventuele previewvideo.
+
+## Wachtlijst
+
+Klanten kunnen zich aanmelden voor een productrelease.
+
+Ondersteun:
+
+- Inschrijven.
+- Bevestiging.
+- Afmelden.
+- Dubbele inschrijvingen voorkomen.
+- E-mail versturen bij release.
+- Aantal inschrijvingen bekijken.
+
+Registreer toestemming waar nodig en voldoe aan privacyregels.
+
+## Collectiedrops
+
+Maak:
+
+- /admin/releases
+- /admin/releases/new
+- /admin/releases/calendar
+
+We moeten volledige collecties in één keer kunnen lanceren.
+
+Iedere drop bevat:
+
+- Dropnaam.
+- Kledinglijn.
+- Banner.
+- Beschrijving.
+- Productselectie.
+- Releasedatum.
+- Releasetijd.
+- Coming Soon-datum.
+- Eventuele einddatum.
+- Wachtlijst.
+- SEO-instellingen.
+
+Een release kan tientallen producten omvatten.
+
+Zorg dat producten zoveel mogelijk consistent tegelijk beschikbaar komen.
+
+## Releasekalender
+
+Ontwikkel een visuele kalender met:
+
+- Dagweergave.
+- Weekweergave.
+- Maandweergave.
+- Geplande releases.
+- Afgeronde releases.
+- Concepten.
+- Wachtende goedkeuringen.
+
+Sta het wijzigen van releases toe via formulieren en eventueel drag-and-drop.
+
+## Release Center
+
+Maak een overzicht met:
+
+- Aankomende releases.
+- Producten in ontwerp.
+- Producten die op goedkeuring wachten.
+- Gepubliceerde producten.
+- Wachtlijstinschrijvingen.
+- Beschikbare voorraad.
+- Ontbrekende productgegevens.
+- Waarschuwingen.
+- Releaseprestaties.
+
+---
+
+# 8. ONTWERP- EN GOEDKEURINGSWORKFLOW
+
+Maak een interne workflow voor productontwikkeling.
+
+## Voorbeeld
+
+1. Willemijn begint een nieuw kledingontwerp.
+2. Ze maakt een productconcept aan.
+3. Ze uploadt ontwerpen, referenties en productfoto's.
+4. Ze vult materialen, maten en productinformatie in.
+5. Het product krijgt de status 'Wacht op controle'.
+6. Max controleert prijzen, voorraad en releaseplanning.
+7. Het product wordt goedgekeurd.
+8. De release wordt ingepland.
+9. Het systeem publiceert het product automatisch.
+
+Beide oprichters moeten deze stappen kunnen uitvoeren.
+
+## Productontwikkeling
+
+Voeg eventueel een interne productontwikkelingsmodule toe voor:
+
+- Ontwerpnotities.
+- Referentieafbeeldingen.
+- Samples.
+- Productieversies.
+- Leveranciers.
+- Kostprijsberekeningen.
+- Feedback.
+- Goedkeuringen.
+- Productietijdlijnen.
+
+Deze informatie mag niet zichtbaar zijn voor klanten.
+
+---
+
+# 9. WINKELMANDJE EN CHECKOUT
+
+Maak een volledig functionerend winkelmandje en checkoutproces.
+
+## Winkelmandje
+
+- Uitschuifbaar zijpaneel.
+- Productafbeeldingen.
+- Maten en kleuren.
+- Aantallen aanpassen.
+- Producten verwijderen.
+- Kortingscodes.
+- Verzendkostenindicatie.
+- Totaalbedrag.
+- BTW.
+- Winkelmandje bewaren.
+
+## Checkout
+
+Ondersteun:
+
+- Gastbestellingen.
+- Accountbestellingen.
+- Factuuradres.
+- Verzendadres.
+- Verzendmethoden.
+- Eventueel afhaalpunten.
+- Kortingscodes.
+- Betaling.
+- Bestelbevestiging.
+
+## Mollie
+
+Integreer Mollie voor ondersteunde betaalmethoden zoals iDEAL en kaartbetalingen.
+
+Gebruik de actuele officiële API.
+
+Vertrouw nooit uitsluitend op een redirect vanaf de betaalpagina.
+
+Controleer betalingen via betrouwbare providerstatussen en geverifieerde servercommunicatie.
+
+Voorkom dubbele orders bij herhaalde callbacks.
+
+Ondersteun:
+
+- Betaald.
+- Openstaand.
+- Mislukt.
+- Geannuleerd.
+- Verlopen.
+- Gedeeltelijk terugbetaald.
+- Volledig terugbetaald.
+
+Sla geen volledige betaalkaartgegevens op.
+
+---
+
+# 10. ORDERMANAGEMENTSYSTEEM
+
+Maak een uitgebreid dashboard waarmee wij iedere bestelling volledig kunnen verwerken.
+
+## Adminroutes
+
+- /admin/orders
+- /admin/orders/[id]
+- /admin/fulfillment
+
+## Bestellingenoverzicht
+
+Toon:
+
+- Ordernummer.
+- Datum.
+- Klant.
+- Aantal producten.
+- Totaalbedrag.
+- Betaalstatus.
+- Verwerkingsstatus.
+- Verzendstatus.
+- Verzendmethode.
+- Tracking.
+- Toegewezen medewerker.
+
+Ondersteun:
+
+- Zoeken.
+- Filteren.
+- Sorteren.
+- Bulkacties.
+- Exporteren.
+- Printen.
+
+## Orderdetailpagina
+
+Bij het openen van een bestelling moeten we alle relevante gegevens kunnen bekijken.
+
+### Klant
+
+- Naam.
+- E-mailadres.
+- Verzendadres.
+- Factuuradres.
+- Contactgegevens.
+
+### Producten
+
+- Productafbeelding.
+- Productnaam.
+- Variant.
+- Maat.
+- Kleur.
+- SKU.
+- Aantal.
+- Prijs.
+
+### Financiën
+
+- Subtotaal.
+- Kortingen.
+- Verzendkosten.
+- BTW.
+- Totaalbedrag.
+- Betaalstatus.
+- Betalingsreferentie.
+- Eventuele refunds.
+
+### Verzending
+
+- Vervoerder.
+- Verzendmethode.
+- Pakketgewicht.
+- Verzendlabel.
+- Trackingnummer.
+- Trackinglink.
+- Verzendstatus.
+
+### Intern
+
+- Interne notities.
+- Toegewezen medewerker.
+- Actiegeschiedenis.
+- Wijzigingen.
+- Statusovergangen.
+
+Maak een volledige tijdlijn van de order.
+
+---
+
+# 11. PICK-AND-PACK SYSTEEM
+
+Maak een aparte werkruimte voor het fysiek verwerken van orders.
+
+## Workflow
+
+### Stap 1 — Order selecteren
+
+Open een bestelling die betaald is en klaarstaat voor verwerking.
+
+### Stap 2 — Picklijst
+
+Toon:
+
+- Product.
+- SKU.
+- Maat.
+- Kleur.
+- Aantal.
+- Voorraadlocatie.
+
+### Stap 3 — Verzamelen
+
+Laat een medewerker artikelen afvinken.
+
+Ondersteun optioneel barcodescanning.
+
+### Stap 4 — Controleren
+
+Controleer dat de juiste artikelen daadwerkelijk verzameld zijn.
+
+### Stap 5 — Verpakken
+
+Markeer de bestelling als ingepakt.
+
+Ondersteun optioneel verschillende verpakkingssoorten.
+
+### Stap 6 — Verzendlabel
+
+Maak het juiste label aan via de gekozen verzendprovider.
+
+### Stap 7 — Afdrukken
+
+Druk het verzendlabel af.
+
+### Stap 8 — Verzenden
+
+Markeer het pakket als overgedragen aan de vervoerder, op basis van de juiste gebeurtenis of expliciete handeling.
+
+### Stap 9 — Klant informeren
+
+Verstuur een verzendbevestiging en trackinginformatie.
+
+Ondersteun:
+
+- Gedeeltelijke verzending.
+- Meerdere pakketten per bestelling.
+- Herdrukken van labels.
+- Foutafhandeling.
+- Annuleringen.
+
+---
+
+# 12. LABELPRINTERINTEGRATIE
+
+DIT IS EEN ZEER BELANGRIJK ONDERDEEL.
+
+We willen een fysieke labelprinter kunnen aansluiten op onze computer en verzendlabels rechtstreeks vanuit het admin-dashboard kunnen afdrukken.
+
+## Printers
+
+Ondersteun in ieder geval:
+
+- Thermische labelprinters.
+- 100 × 150 mm verzendlabels.
+- PDF.
+- ZPL waar mogelijk.
+- Printerselectie.
+- Printerinstellingen.
+- Printvoorbeelden.
+- Testprints.
+
+Het systeem moet bruikbaar zijn met geschikte printers van verschillende fabrikanten.
+
+Ga niet uit van één specifiek merk.
+
+## Methode A — Browserafdrukken
+
+Deze methode moet standaard beschikbaar zijn.
+
+Workflow:
+
+1. Verzendlabel genereren.
+2. PDF ophalen.
+3. Afdrukvoorbeeld openen.
+4. Browserprintdialoog openen.
+5. Label afdrukken.
+
+## Methode B — Direct printen
+
+Onderzoek een veilige koppeling met:
+
+- Sendcloud Print Client.
+- QZ Tray.
+- Of een vergelijkbare lokale printbridge.
+
+Ondersteun waar technisch en contractueel mogelijk:
+
+- Lokale printerdetectie.
+- Standaardprinter selecteren.
+- Printopdrachten versturen.
+- Meerdere labels achter elkaar printen.
+- Printstatus bekijken.
+- Printerfouten tonen.
+
+Gebruik de officiële integratiemogelijkheden.
+
+Maak geen fictieve browser-API voor rechtstreekse printertoegang.
+
+Automatisch afdrukken mag alleen worden aangeboden wanneer dit veilig en daadwerkelijk ondersteund is.
+
+## Printerbeheer
+
+Maak:
+
+`/admin/settings/printers`
+
+Met:
+
+- Printer toevoegen.
+- Printer koppelen.
+- Printer selecteren.
+- Verbinding testen.
+- Labelformaat kiezen.
+- Testlabel printen.
+- Standaardprinter instellen.
+- Printerproblemen bekijken.
+
+Zorg dat de rest van de orderverwerking ook zonder gekoppelde printer werkt.
+
+## Labels
+
+Ondersteun:
+
+- Eén label genereren.
+- Eén label afdrukken.
+- Meerdere labels selecteren.
+- Bulkprinten.
+- Labels opnieuw downloaden.
+- Labels opnieuw afdrukken.
+
+Voorkom dat herdrukken onbedoeld nieuwe betaalde verzendlabels aanmaakt.
+
+---
+
+# 13. VERZENDINGEN EN VERVOERDERS
+
+Integreer Sendcloud.
+
+Ondersteun geschikte diensten zoals:
+
+- PostNL.
+- DHL.
+- Andere beschikbare vervoerders.
+
+Maak:
+
+`/admin/shipping`
+
+Functionaliteit:
+
+- Verzendmethoden beheren.
+- Verzendkosten instellen.
+- Gratis verzending vanaf een bepaald bedrag.
+- Verschillende verzendzones.
+- Pakketgewicht.
+- Pakketafmetingen.
+- Verzendlabels genereren.
+- Tracking.
+- Retourlabels.
+- Verzendstatussen.
+
+## Automatische tracking
+
+Wanneer trackinggegevens beschikbaar zijn, moeten deze automatisch in het orderdashboard verschijnen.
+
+Informeer klanten over verzending via transactionele e-mails.
+
+Verzendstatussen moeten worden bijgewerkt op basis van ondersteunde providerinformatie.
+
+---
+
+# 14. VOORRAAD- EN MAGAZIJNBEHEER
+
+Maak een professioneel voorraadsysteem.
+
+## Voorraad per variant
+
+Beheer afzonderlijk:
+
+- Product.
+- Kleur.
+- Maat.
+- SKU.
+- Magazijnlocatie.
+- Beschikbare voorraad.
+- Gereserveerde voorraad.
+- Fysieke voorraad.
+
+## Voorraadmutaties
+
+Registreer:
+
+- Inkoop.
+- Ontvangst.
+- Verkoop.
+- Reservering.
+- Annulering.
+- Retour.
+- Correctie.
+- Beschadiging.
+- Voorraadtelling.
+
+Bewaar een volledige mutatiegeschiedenis.
+
+## Lage voorraad
+
+Maak configureerbare voorraadmeldingen.
+
+Bijvoorbeeld wanneer een product minder dan vijf stuks beschikbaar heeft.
+
+## Reserveringen
+
+Gebruik betrouwbare databasetransacties om te voorkomen dat het laatste product meerdere keren wordt verkocht.
+
+Zorg dat verlopen of mislukte betalingen gereserveerde voorraad vrijgeven.
+
+Voorkom negatieve voorraad, tenzij backorders expliciet zijn toegestaan.
+
+---
+
+# 15. RETOUREN EN REFUNDS
+
+Bouw een volledig retourmanagementsysteem.
+
+## Klanten
+
+Klanten kunnen:
+
+- Een bestelling opzoeken.
+- Een retour aanvragen.
+- Artikelen selecteren.
+- Een reden opgeven.
+- Retourinstructies bekijken.
+- De retourstatus volgen.
+
+## Administratie
+
+Medewerkers kunnen:
+
+- Retouraanvragen bekijken.
+- Retouren beoordelen.
+- Retourlabels aanmaken waar beschikbaar.
+- Ontvangen artikelen registreren.
+- Artikelen inspecteren.
+- Voorraad bijwerken.
+- Gedeeltelijke refunds uitvoeren.
+- Volledige refunds uitvoeren.
+
+Maak geen automatische juridische aannames over het wel of niet mogen retourneren van kleding.
+
+Ondersteun de toepasselijke Nederlandse en Europese consumentenregels en maak beleidsteksten configureerbaar.
+
+---
+
+# 16. KLANTENBEHEER
+
+Maak:
+
+`/admin/customers`
+
+Toon per klant:
+
+- Naam.
+- E-mailadres.
+- Bestelhistorie.
+- Totaal besteed.
+- Aantal bestellingen.
+- Retourgeschiedenis.
+- Klantenservicenotities.
+- Eventuele supportverzoeken.
+
+Respecteer privacyregels.
+
+Maak persoonsgegevens uitsluitend beschikbaar voor medewerkers die ze nodig hebben.
+
+Ondersteun wettelijke verzoeken tot inzage, export en verwijdering, rekening houdend met toepasselijke bewaarplichten.
+
+---
+
+# 17. KORTINGEN EN MARKETING
+
+Maak een marketingbeheersysteem.
+
+## Kortingscodes
+
+Ondersteun:
+
+- Procentuele korting.
+- Vast kortingsbedrag.
+- Gratis verzending.
+- Minimale bestelwaarde.
+- Geldigheidsperiode.
+- Maximumaantal gebruiken.
+- Maximum per klant.
+- Specifieke producten.
+- Specifieke kledinglijnen.
+- Specifieke collecties.
+
+Controleer kortingsregels altijd server-side.
+
+## Nieuwsbrief
+
+Maak een systeem voor:
+
+- Nieuwsbriefinschrijvingen.
+- Toestemmingsregistratie.
+- Afmelden.
+- Releaseaankondigingen.
+- Collectieaankondigingen.
+
+Integreer waar nodig een externe e-mailmarketingprovider.
+
+Gebruik transactionele e-mails niet zonder meer voor commerciële berichten.
+
+## Releasecampagnes
+
+Maak bij een release optioneel:
+
+- Homepagebanner.
+- Coming Soon-pagina.
+- Wachtlijst.
+- Countdown.
+- Release-e-mail.
+- Automatische zichtbaarheid bij publicatie.
+
+---
+
+# 18. FINANCIËN EN RAPPORTAGES
+
+Maak:
+
+`/admin/analytics`
+
+En:
+
+`/admin/finance`
+
+## Statistieken
+
+Toon:
+
+- Omzet vandaag.
+- Omzet deze week.
+- Omzet deze maand.
+- Omzet dit jaar.
+- Aantal bestellingen.
+- Gemiddelde bestelwaarde.
+- Verkochte producten.
+- Bestverkochte artikelen.
+- Omzet per kledinglijn.
+- Omzet per collectie.
+- Retourpercentage.
+- Kortingskosten.
+- Verzendkosten.
+- Betaalkosten.
+- Inkoopkosten.
+- Geschatte brutomarge.
+
+## Grafieken
+
+Maak interactieve grafieken met:
+
+- Datumfilters.
+- Kledinglijnfilters.
+- Productfilters.
+- Vergelijking met vorige periode.
+
+## Export
+
+Ondersteun:
+
+- CSV.
+- Excel.
+- Financiële orderexport.
+- Productexport.
+- Voorraadexport.
+- BTW-overzicht.
+
+Maak onderscheid tussen:
+
+- Omzet.
+- Ontvangen betalingen.
+- Terugbetalingen.
+- Kosten.
+- Brutomarge.
+- Geschatte winst.
+
+Presenteer geschatte winst niet alsof het definitieve boekhoudkundige nettowinst is.
+
+---
+
+# 19. CONTENT MANAGEMENT SYSTEM
+
+We willen de hele website kunnen aanpassen zonder Codex te gebruiken.
+
+Maak een beheeromgeving voor:
+
+- Homepage.
+- Heroafbeeldingen.
+- Banners.
+- Navigatiemenu's.
+- Footer.
+- Tekstpagina's.
+- Collectiepagina's.
+- Kledinglijnpagina's.
+- FAQ.
+- Contactinformatie.
+- SEO.
+- Promotiebalken.
+
+## Homepage-editor
+
+Maak een systeem met herbruikbare secties.
+
+Voorbeelden:
+
+- Hero.
+- Productgrid.
+- Collectiegrid.
+- Video.
+- Tekst met afbeelding.
+- Aankomende release.
+- Uitgelichte kledinglijn.
+- Nieuwsbrief.
+- Merkverhaal.
+
+Laat beheerders secties toevoegen, verwijderen en herschikken.
+
+Ondersteun concepten, voorbeelden en publiceren.
+
+Maak een versiegeschiedenis waar dit praktisch mogelijk is.
+
+---
+
+# 20. ADMIN-DASHBOARD
+
+Maak een professioneel intern dashboard op:
+
+`/admin`
+
+## Hoofdnavigatie
+
+Gebruik bijvoorbeeld:
+
+**Overzicht**
+- Dashboard
+- Meldingen
+- Activiteiten
+
+**Verkoop**
+- Bestellingen
+- Verwerking
+- Verzendingen
+- Retouren
+- Klanten
+
+**Producten**
+- Alle producten
+- Nieuw product
+- Collecties
+- Kledinglijnen
+- Voorraad
+- Productontwikkeling
+
+**Releases**
+- Release Center
+- Releasekalender
+- Nieuwe drop
+- Wachtlijsten
+
+**Marketing**
+- Kortingen
+- Nieuwsbrief
+- Campagnes
+
+**Website**
+- Homepage
+- Pagina's
+- Menu's
+- Media
+
+**Bedrijf**
+- Analyses
+- Financiën
+- Medewerkers
+
+**Instellingen**
+- Algemene instellingen
+- Betalingen
+- Verzending
+- Printers
+- Belastingen
+- E-mail
+- Integraties
+- Beveiliging
+
+## Dashboardhomepage
+
+Toon direct:
+
+- Nieuwe orders.
+- Te verwerken orders.
+- Orders klaar voor verzending.
+- Omzet.
+- Lage voorraad.
+- Aankomende releases.
+- Producten die goedkeuring nodig hebben.
+- Retouraanvragen.
+- Systeemmeldingen.
+
+Gebruik echte databasegegevens.
+
+---
+
+# 21. MEDEWERKERS EN ROLLEN
+
+Ondersteun:
+
+- Owner.
+- Admin.
+- Designer.
+- Product Manager.
+- Order Manager.
+- Warehouse Employee.
+- Customer Support.
+- Finance.
+
+## Eigenaren
+
+Beide eigenaren moeten volledige rechten kunnen krijgen.
+
+## Autorisatie
+
+Implementeer:
+
+- Server-side rechten.
+- Databasebeleid.
+- Beveiligde adminroutes.
+- Auditlogs.
+- Bescherming tegen privilege escalation.
+- Multifactor-authenticatie voor beheerders waar mogelijk.
+
+Maak rechten configureerbaar.
+
+Alleen navigatie-items verbergen is onvoldoende beveiliging.
+
+---
+
+# 22. E-MAILAUTOMATISERING
+
+Integreer transactionele e-mail.
+
+Ondersteun:
+
+- Accountregistratie.
+- Wachtwoordherstel.
+- Bestelbevestiging.
+- Betaalbevestiging.
+- Verzending.
+- Tracking.
+- Retourontvangst.
+- Refund.
+- Contactformulier.
+- Releaseherinneringen waar toegestaan.
+
+Maak templates bewerkbaar.
+
+Ondersteun placeholders voor:
+
+- Klantnaam.
+- Bestelnummer.
+- Producten.
+- Bedragen.
+- Tracking.
+- Verzendinformatie.
+
+Voorkom dubbele e-mails bij herhaalde webhooks of retries.
+
+---
+
+# 23. DATABASE
+
+Ontwerp een schaalbare PostgreSQL-database.
+
+Maak onder meer:
+
+- profiles
+- staff_members
+- roles
+- permissions
+- brands
+- brand_settings
+- collections
+- collection_products
+- categories
+- products
+- product_variants
+- product_media
+- product_development
+- product_approvals
+- releases
+- release_products
+- release_waitlist
+- inventory_locations
+- inventory_movements
+- inventory_reservations
+- customers
+- customer_addresses
+- carts
+- cart_items
+- orders
+- order_items
+- order_events
+- payments
+- refunds
+- fulfillments
+- fulfillment_items
+- shipments
+- shipment_items
+- shipping_labels
+- returns
+- return_items
+- discounts
+- discount_redemptions
+- content_pages
+- content_sections
+- email_templates
+- email_events
+- printer_settings
+- integration_settings
+- audit_logs
+
+Voeg waar nodig aanvullende tabellen toe.
+
+Gebruik:
+
+- Foreign keys.
+- Indexen.
+- Unieke constraints.
+- Transacties.
+- Row Level Security.
+- Created_at en updated_at.
+- UUID's waar passend.
+
+Bewaar ordergegevens als historische snapshots, zodat latere prijswijzigingen oude orders niet aanpassen.
+
+Bewaar secrets niet als leesbare gegevens in clienttoegankelijke databasevelden.
+
+---
+
+# 24. BEVEILIGING
+
+Implementeer beveiliging vanaf het begin.
+
+Vereisten:
+
+- Veilige authenticatie.
+- Autorisatie per rol.
+- Row Level Security.
+- Server-side validatie.
+- Bescherming tegen SQL-injectie.
+- Bescherming tegen XSS.
+- CSRF-bescherming waar relevant.
+- Rate limiting.
+- Veilige bestandsuploads.
+- Webhookverificatie.
+- Idempotente transacties.
+- Geen secrets in frontendcode.
+- Correcte privacyinstellingen.
+- Auditlogging.
+- Back-ups.
+- Herstelprocedures.
+- Veilige foutmeldingen.
+
+Vertrouw nooit op client-side prijzen, voorraad of gebruikersrechten.
+
+Beperk toegang tot klantgegevens.
+
+Controleer securitygevoelige workflows voor livegang.
+
+---
+
+# 25. WETTELIJKE VEREISTEN
+
+Houd rekening met Nederlandse en Europese wetgeving.
+
+Voorzie pagina's en instellingen voor:
+
+- Privacyverklaring.
+- Cookievoorkeuren.
+- Algemene voorwaarden.
+- Herroepingsrecht.
+- Retourbeleid.
+- Verzendvoorwaarden.
+- Contactgegevens.
+- Bedrijfsgegevens.
+- BTW.
+- Prijstransparantie.
+- Consumentenrechten.
+- Toegankelijkheid waar toepasselijk.
+
+Gebruik placeholders voor ontbrekende bedrijfsgegevens.
+
+Verzin geen KvK-nummer, BTW-nummer of andere juridische informatie.
+
+Publiceer juridische conceptteksten niet automatisch als definitieve voorwaarden.
+
+Omdat de oprichters mogelijk nog minderjarig zijn, mogen betaalaccounts, contracten en andere zakelijke verplichtingen niet automatisch worden aangemaakt. Controleer de toepasselijke toelatingsvoorwaarden van aanbieders.
+
+---
+
+# 26. SEO EN PERFORMANCE
+
+Optimaliseer de website voor:
+
+- Google.
+- Mobiele gebruikers.
+- Core Web Vitals.
+- Snelle productpagina's.
+- Afbeeldingsoptimalisatie.
+- Toegankelijkheid.
+- Semantische HTML.
+
+Implementeer:
+
+- Sitemap.
+- Robots.txt.
+- Metadata.
+- Canonical URLs.
+- Structured data.
+- Open Graph.
+- Product structured data.
+- Goede foutpagina's.
+- Zoekmachinevriendelijke routes.
+
+Voorkom voortijdige indexering van geheime, nog niet aangekondigde releases.
+
+---
+
+# 27. DEVELOPMENT EN DEMO-MODUS
+
+Maak een veilige ontwikkelomgeving.
+
+Gebruik fictieve demo-inhoud voor:
+
+- Producten.
+- Kledinglijnen.
+- Klanten.
+- Orders.
+- Releases.
+- Verzendlabels.
+- Betalingen.
+
+Maak duidelijk zichtbaar wanneer het dashboard in demomodus draait.
+
+Gebruik sandboxintegraties waar beschikbaar.
+
+Demogegevens mogen niet per ongeluk in de productieomgeving terechtkomen.
+
+Zorg dat het platform later eenvoudig met echte gegevens gevuld kan worden.
+
+---
+
+# 28. TESTEN
+
+Maak unit-, integratie- en end-to-end tests.
+
+Test minimaal:
+
+### Producten
+
+- Product aanmaken.
+- Product wijzigen.
+- Product archiveren.
+- Varianten beheren.
+- Voorraad aanpassen.
+
+### Releases
+
+- Concept opslaan.
+- Release inplannen.
+- Coming Soon activeren.
+- Countdown tonen.
+- Automatische publicatie.
+- Product pas op juiste tijd verkoopbaar maken.
+- Complete collectiedrop.
+- Release annuleren.
+- Tijdzone- en zomertijdverwerking.
+
+### Bestellingen
+
+- Product toevoegen aan winkelmand.
+- Checkout.
+- Succesvolle betaling.
+- Mislukte betaling.
+- Dubbele webhook.
+- Concurrente voorraadreserveringen.
+- Orderverwerking.
+- Gedeeltelijke verzending.
+- Annulering.
+
+### Verzending
+
+- Label aanmaken.
+- Label downloaden.
+- Label opnieuw afdrukken.
+- Tracking opslaan.
+- Verzendstatus verwerken.
+
+### Retouren
+
+- Retouraanvraag.
+- Retour ontvangen.
+- Gedeeltelijke refund.
+- Volledige refund.
+- Voorraad terugplaatsen.
+
+### Beveiliging
+
+- Adminrechten.
+- RLS-beleid.
+- API-autorisatie.
+- Onbevoegde toegang.
+- Onveilige statuswijzigingen.
+- Pogingen tot manipulatie van prijzen.
+
+Maak een testoverzicht met geslaagde en mislukte tests.
+
+---
+
+# 29. DEPLOYMENT
+
+Maak het project geschikt voor Vercel en Supabase.
+
+Lever:
+
+- README.
+- .env.example.
+- Installatie-instructies.
+- Database-migraties.
+- Supabase-configuratie.
+- Mollie-configuratie.
+- Sendcloud-configuratie.
+- E-mailconfiguratie.
+- Printerinstallatiehandleiding.
+- Testinstructies.
+- Deploymentinstructies.
+- Back-upstrategie.
+
+Documenteer benodigde API-sleutels zonder deze in broncode op te slaan.
+
+---
+
+# 30. IMPLEMENTATIEVOLGORDE
+
+Werk in onderstaande fasen.
+
+## Fase 1 — Fundament
+
+- Projectstructuur.
+- Technische architectuur.
+- Database.
+- Authenticatie.
+- Autorisatie.
+- Ontwerpsysteem.
+
+## Fase 2 — Website
+
+- Homepage.
+- Navigatie.
+- Productpagina's.
+- Collecties.
+- Kledinglijnen.
+- Responsive ontwerp.
+
+## Fase 3 — Productbeheer
+
+- Producteditor.
+- Varianten.
+- Media.
+- Voorraad.
+- Productstatussen.
+
+## Fase 4 — Releases
+
+- Releasedatums.
+- Coming Soon.
+- Wachtlijsten.
+- Collectiedrops.
+- Kalender.
+- Automatische publicatie.
+
+## Fase 5 — Verkoop
+
+- Winkelmandje.
+- Checkout.
+- Mollie.
+- Betalingsbevestiging.
+- Orders.
+
+## Fase 6 — Orderverwerking
+
+- Orderdashboard.
+- Pick-and-pack.
+- Verzendintegratie.
+- Tracking.
+- Labelgeneratie.
+- Printerintegratie.
+
+## Fase 7 — Bedrijfsvoering
+
+- Retouren.
+- Klantenbeheer.
+- Financiën.
+- Marketing.
+- E-mails.
+- CMS.
+
+## Fase 8 — Productieklaar maken
+
+- Beveiligingscontrole.
+- Tests.
+- Performance.
+- Toegankelijkheid.
+- Monitoring.
+- Documentatie.
+- Deploymentvoorbereiding.
+
+---
+
+# 31. EXTRA GEBRUIKSVRIENDELIJKHEID
+
+Het dashboard moet zo eenvoudig zijn dat iemand zonder programmeerkennis vrijwel alles kan beheren.
+
+Gebruik:
+
+- Duidelijke formulieren.
+- Drag-and-drop waar zinvol.
+- Zoekfuncties.
+- Bulkbewerkingen.
+- Automatisch opslaan van concepten waar betrouwbaar.
+- Bevestigingsmeldingen.
+- Duidelijke foutmeldingen.
+- Toegankelijke navigatie.
+- Responsive beheerpagina's.
+- Keyboard shortcuts waar nuttig.
+- Bevestiging bij onomkeerbare acties.
+
+Voorkom ingewikkelde administratieve schermen wanneer een eenvoudige workflow mogelijk is.
+
+## Belangrijk voorbeeld
+
+Als Willemijn een nieuw shirt wil uitbrengen, moet zij zonder technische kennis het volgende kunnen doen:
+
+1. Inloggen.
+2. Naar Producten gaan.
+3. Op 'Nieuw product' klikken.
+4. Naam en beschrijving invullen.
+5. Afbeeldingen uploaden.
+6. Maten en kleuren toevoegen.
+7. Prijs invullen.
+8. Voorraad instellen.
+9. Kledinglijn selecteren.
+10. Releasedatum kiezen.
+11. Product ter goedkeuring indienen.
+12. Een preview bekijken.
+
+Na goedkeuring moet het product automatisch op de ingestelde releasedatum online komen.
+
+Als een klant het shirt bestelt, moet Max de bestelling kunnen openen, het artikel verzamelen, een verzendlabel genereren, dit via een aangesloten labelprinter afdrukken en de bestelling verzenden.
+
+Dit volledige proces moet binnen hetzelfde platform plaatsvinden.
+
+---
+
+# 32. DEFINITIEVE OPDRACHT
+
+Bouw WM Studio Collective als één geïntegreerd systeem.
+
+De belangrijkste eigenschappen zijn:
+
+**Voor de klant:**
+- Luxe uitstraling.
+- Goede productpresentatie.
+- Eenvoudig winkelen.
+- Veilige betaling.
+- Heldere communicatie.
+- Professionele verzending.
+- Duidelijke retourmogelijkheden.
+
+**Voor de ontwerpers:**
+- Producten ontwerpen.
+- Producten toevoegen.
+- Collecties beheren.
+- Releases plannen.
+- Productinformatie aanpassen.
+
+**Voor de ondernemers:**
+- Bestellingen verwerken.
+- Verzendlabels printen.
+- Voorraad beheren.
+- Retouren afhandelen.
+- Klanten helpen.
+- Financiën bekijken.
+- Verkoop analyseren.
+- Nieuwe kledinglijnen opzetten.
+
+## Belangrijke ontwikkelregels
+
+1. Bouw echte functionaliteit, geen uitsluitend visuele knoppen.
+2. Gebruik een professionele, onderhoudbare codebase.
+3. Maak geen onnodig ingewikkelde architectuur.
+4. Verzin geen externe API-mogelijkheden.
+5. Gebruik veilige ontwikkel- en testomgevingen.
+6. Maak geen echte financiële transacties zonder expliciete toestemming.
+7. Vraag om benodigde credentials wanneer een echte koppeling niet zonder deze gegevens kan worden afgerond.
+8. Zet ontbrekende integraties duidelijk in een configuratieoverzicht.
+9. Markeer niet-afgeronde onderdelen eerlijk als niet-afgerond.
+10. Verander bestaande productiegegevens niet zonder toestemming.
+11. Maak voordat je bestaande code ingrijpend wijzigt een veilige herstelmogelijkheid.
+12. Documenteer wat volledig werkt en wat nog nodig is voor livegang.
+
+Begin met een korte analyse van de bestaande repository en een concreet technisch implementatieplan.
+
+Ga daarna daadwerkelijk bouwen.
+
+Werk zelfstandig door aan de fasen zolang de omgeving dat toelaat en stop niet na uitsluitend het opleveren van een planning.
+
+Als je niet alles in één sessie kunt afronden, lever dan een werkende, geteste tussenstand met een duidelijk overzicht van resterende taken.
+
+**Het uiteindelijke doel is een compleet, professioneel en schaalbaar platform waarmee WM Studio Collective zijn toekomstige kledingmerken kan ontwerpen, lanceren, verkopen en beheren — vanuit één centrale omgeving.**

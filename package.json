@@ -1,0 +1,47 @@
+{
+  "name": "wm-studios",
+  "version": "1.0.0",
+  "description": "WM Studio Collective — premium fashion commerce workspace",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "setup": "node scripts/setup.mjs",
+    "test:e2e": "playwright test",
+    "jobs": "node --env-file=.env.local --import tsx scripts/release-worker.ts",
+    "format": "prettier --write src scripts tests e2e *.ts *.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Max-Lanz-NL/WM-Studios.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Max-Lanz-NL/WM-Studios/issues"
+  },
+  "homepage": "https://github.com/Max-Lanz-NL/WM-Studios#readme",
+  "dependencies": {
+    "lucide-react": "^1.61.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "private": true
+}
