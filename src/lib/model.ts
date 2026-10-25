@@ -34,6 +34,7 @@ export const productSchema = z
         "Gebruik een Unsplash-afbeelding",
       ),
     variants: z.array(variantSchema).min(1).max(100),
+    version: z.number().int().positive().optional(),
   })
   .superRefine((p, c) => {
     if (p.status === "scheduled" && !p.releaseAt)
@@ -59,7 +60,14 @@ export type Order = {
   address: string;
   total: number;
   shipping: number;
-  status: "paid_demo" | "packed" | "shipped";
+  status:
+    | "pending_payment"
+    | "paid_demo"
+    | "paid"
+    | "cancelled"
+    | "expired"
+    | "packed"
+    | "shipped";
   createdAt: string;
   items: {
     productId: string;

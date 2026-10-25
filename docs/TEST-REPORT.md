@@ -1,18 +1,21 @@
-# Testoverzicht — 25 oktober 2026
+# Migratiecontroles — 25 oktober 2026
 
-| Controle | Resultaat |
-|---|---|
-| Next.js productiebuild | Geslaagd |
-| Strict TypeScript | Geslaagd |
-| Vitest unit-/integratiecontroles | 15 geslaagd, 0 mislukt |
-| Playwright / Microsoft Edge | 6 geslaagd, 0 mislukt |
-| Afhankelijkheden bij installatie | Geen bekende kwetsbaarheden gemeld door npm audit |
-| Visuele controle | Desktopwebshop en dashboard bekeken; mobiele breedte 390 px gecontroleerd |
+## Uitgevoerd
 
-De tests dekken verkoopgrenzen, zomer-/wintertijdweergave, geplande publicatie, geannuleerde releases, statusafscherming, validatie, serverprijzen, snapshots, idempotentie, rollback bij onvoldoende voorraad, meerdere maten van één product, laatste exemplaar en unieke SKU's/slugs.
+- 36 Vitest-controles geslaagd: daadwerkelijke PostgreSQL-migraties in PGlite, reserveringen, expiratie, snapshots, idempotentie, import/rollback, read-only export/back-up, RLS, rollen, versieconflicten, configbeveiliging en serverauth met testdubbels.
+- 6 Playwright/Edge-browserregressies geslaagd tegen de nieuwe applicatie en een expliciete PostgreSQL/RLS-fixture: checkout/orderverwerking, productaanmaak, beheerafscherming, herkomstcontrole, twee overlappende HTTP-bestellingen, mobiel menu/Escape en desktopweergave.
+- Strict TypeScript en de Next.js-build geslaagd.
+- Echte lokale SQLite-export read-only uitgevoerd: 6 producten, 2 instellingen, 0 orders, 0 wachtlijsten. Consistente backup en checksum opgeslagen onder de genegeerde `data`-map.
+- Die export in een geïsoleerde PostgreSQL-testengine geïmporteerd: 6 producten en 8 oorspronkelijke archiefrecords. Productvelden en variantvoorraden vergeleken zonder verlies. Geen bronwijzigingen.
 
-De browsertests controleren twee gelijktijdige aanvragen op één resterend exemplaar (precies één succes), manipulatie van clientprijzen, beheerweigering zonder sessie, herkomstcontrole, ongeldige checkout, klantcheckout gevolgd door inpakken, productaanmaak, mobiel menu en Escape-sluiting. Screenshots zijn lokaal beschikbaar in `test-results` en worden niet gecommit.
+## Grenzen van het bewijs
 
-De eerste browserpoging werd door lokale netwerkbeperkingen geblokkeerd. De volgende run vond geen gebundelde Chromium en signaleerde een herkomstvergelijking met een genormaliseerde hostnaam. De testconfiguratie gebruikt nu de aanwezige Edge-browser en de herkomstcontrole vergelijkt de daadwerkelijke Host-header. De uiteindelijke runs zijn geslaagd. De screenshotvoorbereiding wacht op hydratie voordat lazy images worden geladen.
+PGlite is een echte PostgreSQL-engine, maar gebruikt één backend. Overlappende HTTP-verzoeken in de browserfixture worden daarom geserialiseerd. Dit controleert de applicatieflow en transactieresultaten, maar bewijst geen lockinggedrag tussen meerdere PostgreSQL-backends. De rollen en RLS worden als daadwerkelijke PostgreSQL-rollen uitgevoerd; de Supabase Auth-schemafuncties zijn minimale fixtures.
 
-Niet getest en niet afgerond: Supabase/RLS, externe betaal- en verzendproviders, refunds, klantauthenticatie, printerhardware, productiehosting, volledige toegankelijkheid en belasting-/juridische juistheid. De geslaagde demo-tests verklaren het systeem niet productieklaar.
+De browserfixture emuleert Auth en PostgREST. Zij is uitsluitend testcode, geen runtimefallback. De tests bewijzen geen echte Supabase JWT-validatie, refresh-tokenrotatie, netwerk-/providerfouten of MFA. De lokale Docker/Supabase-stack kwam niet beschikbaar; er was geen WM Studio-stagingproject aangewezen. Er zijn geen remote migraties toegepast en geen live Supabase-advisors gedraaid.
+
+De onderhoudsfunctie is getest; de pg_cron-extensie-installatie en echte scheduler zijn nog niet uitgevoerd. De testhulp slaat uitsluitend het gemarkeerde installatiegedeelte over. Dit moet in staging alsnog worden getest. Tijdens snelle navigatie meldde de devserver verbroken responsstreams; alle zes browserasserties slaagden. Dit is geen productie-loadtest.
+
+Twee aanvullende tests voor echte afzonderlijke PostgreSQL-verbindingen staan in `tests/postgres.integration.ts`. Ze vallen buiten de standaardtest en zijn niet uitgevoerd omdat een expliciet aangewezen testdatabase ontbreekt. `npm run test:postgres` vereist een veilige test-URL en expliciete toestemming via configuratie; de tests ruimen alleen hun eigen unieke testrecords op.
+
+De oude SQLite-tests zijn inhoudelijk vervangen en uitgebreid met PostgreSQL-regressies. De oorspronkelijke tests en broncode zijn via het Git-herstelpunt beschikbaar. Zie `SUPABASE-MIGRATION.md` voor aanvullende stagingacceptatie en herstel.

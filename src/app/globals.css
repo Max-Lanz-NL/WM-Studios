@@ -1109,6 +1109,10 @@ footer {
   color: #687454;
 }
 .profile strong {
+  max-width: 115px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: block;
   font-size: 10px;
   font-weight: 500;

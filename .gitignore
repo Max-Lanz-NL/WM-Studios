@@ -6,3 +6,7 @@ data/
 test-results/
 playwright-report/
 *.tsbuildinfo
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+legacy-export*.json

@@ -7,7 +7,11 @@ test("gelijktijdige kopers kunnen het laatste artikel niet dubbel kopen", async 
   const headers = { origin };
   const login = await request.post("/api/admin", {
     headers,
-    data: { action: "login", password: "local-e2e-test-password-only" },
+    data: {
+      action: "login",
+      email: "e2e-owner@example.invalid",
+      password: "local-e2e-test-password-only",
+    },
   });
   expect(login.ok()).toBe(true);
   const token = Date.now();
@@ -62,6 +66,7 @@ test("gelijktijdige kopers kunnen het laatste artikel niet dubbel kopen", async 
       id: p.id,
       product: {
         ...p,
+        version: p.version + 1,
         status: "archived",
         variants: p.variants.map((v: { stock: number }) => ({
           ...v,
@@ -119,8 +124,11 @@ test("klant plaatst demo-order en beheerder verwerkt deze", async ({
   ).toBeVisible();
   await page.goto("/admin");
   await page
-    .getByLabel("Beheerwachtwoord")
+    .getByLabel("Wachtwoord", { exact: true })
     .fill("local-e2e-test-password-only");
+  await page
+    .getByLabel("E-mailadres", { exact: true })
+    .fill("e2e-owner@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(
     page.getByRole("heading", { name: "A new day in the studio." }),
@@ -138,8 +146,11 @@ test("klant plaatst demo-order en beheerder verwerkt deze", async ({
 test("producteditor slaat een nieuw concept op", async ({ page }) => {
   await page.goto("/admin");
   await page
-    .getByLabel("Beheerwachtwoord")
+    .getByLabel("Wachtwoord", { exact: true })
     .fill("local-e2e-test-password-only");
+  await page
+    .getByLabel("E-mailadres", { exact: true })
+    .fill("e2e-owner@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await page.getByRole("button", { name: "Nieuw product" }).click();
   await page
@@ -189,8 +200,11 @@ test("desktop preview", async ({ page }) => {
   });
   await page.goto("/admin");
   await page
-    .getByLabel("Beheerwachtwoord")
+    .getByLabel("Wachtwoord", { exact: true })
     .fill("local-e2e-test-password-only");
+  await page
+    .getByLabel("E-mailadres", { exact: true })
+    .fill("e2e-owner@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(
     page.getByRole("heading", { name: "A new day in the studio." }),

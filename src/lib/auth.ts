@@ -1,46 +1,59 @@
-import { cookies } from "next/headers";
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { db } from "./db";
-function secret() {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 32)
-    throw new Error("Configureer SESSION_SECRET (32+ tekens)");
-  return s;
+import { sessionClient, serviceClient } from "./supabase";
+export type Staff = {
+  id: string;
+  email: string;
+  role: string;
+  permissions: string[];
+};
+export async function currentStaff(): Promise<Staff | null> {
+  const client = await sessionClient();
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
+  if (error || !user) return null;
+  const { data: member, error: membershipError } = await client
+    .from("staff_members")
+    .select("role,active")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (membershipError)
+    throw new Error("Medewerkerrechten konden niet worden gecontroleerd.");
+  if (!member?.active) return null;
+  const { data, error: permissionError } = await client
+    .from("role_permissions")
+    .select("permission")
+    .eq("role", member.role);
+  if (permissionError)
+    throw new Error("Medewerkerrechten konden niet worden gecontroleerd.");
+  return {
+    id: user.id,
+    email: user.email || "",
+    role: member.role,
+    permissions: (data || []).map((p) => p.permission),
+  };
 }
-export function sign(value: string) {
-  return createHmac("sha256", secret()).update(value).digest("hex");
+export async function requireAdmin(permission?: string) {
+  const staff = await currentStaff();
+  if (!staff) throw new Error("UNAUTHORIZED");
+  if (permission && !staff.permissions.includes(permission))
+    throw new Error("FORBIDDEN");
+  return staff;
 }
-export function equal(a: string, b: string) {
-  const x = Buffer.from(a),
-    y = Buffer.from(b);
-  return x.length === y.length && timingSafeEqual(x, y);
-}
-export async function isAdmin() {
-  const c = (await cookies()).get("wm_admin")?.value;
-  if (!c) return false;
-  const [exp, sig] = c.split(".");
-  return Number(exp) > Date.now() && equal(sign(exp), sig || "");
-}
-export async function requireAdmin() {
-  if (!(await isAdmin())) throw new Error("UNAUTHORIZED");
-}
-export function rateLimit(key: string, max = 8) {
-  const d = db(),
-    now = Date.now();
-  const r = d.prepare("SELECT count,reset FROM attempts WHERE id=?").get(key);
-  if (!r || Number(r.reset) < now) {
-    d.prepare(
-      "INSERT INTO attempts VALUES (?,1,?) ON CONFLICT(id) DO UPDATE SET count=1,reset=excluded.reset",
-    ).run(key, now + 60000);
-    return;
-  }
-  if (Number(r.count) >= max)
+export async function rateLimit(key: string, max = 8) {
+  const { data, error } = await serviceClient().rpc("check_rate_limit", {
+    bucket: key,
+    max_requests: max,
+  });
+  if (error) throw new Error("Verzoekcontrole tijdelijk niet beschikbaar");
+  if (!data)
     throw new Error("Te veel verzoeken. Probeer het over een minuut opnieuw.");
-  d.prepare("UPDATE attempts SET count=count+1 WHERE id=?").run(key);
 }
 export function sameOrigin(request: Request) {
   const url = new URL(request.url);
-  const host = request.headers.get("host") || url.host;
-  if (request.headers.get("origin") !== `${url.protocol}//${host}`)
+  const expected =
+    process.env.APP_ORIGIN ||
+    `${url.protocol}//${request.headers.get("host") || url.host}`;
+  if (request.headers.get("origin") !== expected)
     throw new Error("Ongeldige herkomst");
 }
