@@ -1,95 +1,218 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import {
-  checkout,
-  products,
-  saveProduct,
-  orders,
-  publishDue,
-} from "../src/lib/db";
-import { saleable, productSchema, date } from "../src/lib/model";
-beforeAll(() => {
-  process.env.APP_MODE = "demo";
-  process.env.DATABASE_PATH = join(
-    mkdtempSync(join(tmpdir(), "wm-test-")),
-    "test.sqlite",
-  );
-});
-const customer = () => ({
+import type { PGlite } from "@electric-sql/pglite";
+import type { Order, Product } from "../src/lib/model";
+import { productSchema, saleable, date } from "../src/lib/model";
+import { demoProducts } from "../scripts/fixtures";
+import { testDatabase, call } from "./postgres";
+let db: PGlite;
+const rpc = <T>(name: string, args: Record<string, unknown> = {}) =>
+  call<T>(db, name, args);
+const save = (p: Product, id: string | null = null) =>
+  rpc<Product>("wm_save_product", { input: p, product_id: id });
+const ps = async () =>
+  (
+    await db.query<{ body: Product }>(
+      "select body from wm_products order by created_at,id",
+    )
+  ).rows.map((r) => r.body);
+const buy = (p: Product, extra = {}) => ({
   key: randomUUID(),
   email: "test@example.invalid",
-  name: "Demo Test",
-  address: "Teststraat 1, 1000 AA, Teststad",
+  name: "Test Buyer",
+  address: "Teststraat 1, Teststad",
+  items: [{ productId: p.id, sku: p.variants[0].sku, quantity: 1 }],
+  ...extra,
 });
-describe("releases en validatie", () => {
-  it("blokkeert een directe aankoop vóór verkoopstart", () => {
-    const p = products().find((p) => p.status === "scheduled")!;
-    expect(() =>
-      checkout({
-        ...customer(),
-        items: [{ productId: p.id, sku: p.variants[0].sku, quantity: 1 }],
-      }),
-    ).toThrow("nog niet beschikbaar");
+beforeAll(async () => {
+  db = await testDatabase();
+  await rpc("wm_seed", { catalog: demoProducts() });
+}, 60000);
+afterAll(async () => {
+  await db?.close();
+});
+describe("PostgreSQL commerce transactions", () => {
+  it("keeps test checkout disabled by default", async () => {
+    await expect(
+      rpc("wm_checkout", { input: buy((await ps())[0]) }),
+    ).rejects.toThrow("uitgeschakeld");
+    await db.exec(
+      "update wm_settings set body='true' where id='test_checkout'",
+    );
   });
-  it("laat verkoop precies op de releasegrens toe", () => {
-    const p = {
-      status: "scheduled" as const,
-      releaseAt: "2026-10-25T01:00:00.000Z",
-    };
-    expect(saleable(p, Date.parse(p.releaseAt) - 1)).toBe(false);
-    expect(saleable(p, Date.parse(p.releaseAt))).toBe(true);
-  });
-  it("blokkeert concepten, reviews en archieven", () => {
+  it("blocks early purchases and preserves release boundary semantics", async () => {
+    const p = (await ps()).find((p) => p.status === "scheduled")!;
+    await expect(rpc("wm_checkout", { input: buy(p) })).rejects.toThrow(
+      "nog niet beschikbaar",
+    );
+    const at = Date.parse(p.releaseAt!);
+    expect(saleable(p, at - 1)).toBe(false);
+    expect(saleable(p, at)).toBe(true);
     for (const status of ["draft", "review", "approved", "archived"] as const)
       expect(saleable({ status, releaseAt: null })).toBe(false);
   });
-  it("verwerkt wintertijd op de Amsterdamse datumgrens", () => {
-    expect(date("2026-10-25T00:30:00.000Z")).toContain("02:30");
-    expect(date("2026-10-25T01:30:00.000Z")).toContain("02:30");
-    expect(date("2026-07-01T12:00:00.000Z")).toContain("14:00");
-    expect(date("2026-12-01T12:00:00.000Z")).toContain("13:00");
+  it("publishes once, supports cancellation, and audits atomically", async () => {
+    const p = await save({
+      ...demoProducts()[0],
+      name: "Timed",
+      slug: "timed",
+      status: "scheduled",
+      releaseAt: "2020-01-01T12:00:00.000Z",
+      variants: [{ size: "M", color: "Black", sku: "TIMED-M", stock: 5 }],
+    });
+    expect(
+      await rpc("wm_publish_due", { at_time: "2020-01-01T11:59:59Z" }),
+    ).toBe(0);
+    expect(
+      await rpc("wm_publish_due", { at_time: "2020-01-01T12:00:00Z" }),
+    ).toBe(1);
+    expect(
+      await rpc("wm_publish_due", { at_time: "2020-01-01T12:00:01Z" }),
+    ).toBe(0);
+    await save({ ...p, status: "draft" }, p.id);
+    expect(
+      await rpc("wm_publish_due", { at_time: "2020-01-02T12:00:01Z" }),
+    ).toBe(0);
   });
-  it("vereist een releasedatum voor ingeplande producten", () => {
-    const p = products()[0];
+  it("uses DB prices, decrements multiple sizes and keeps immutable order snapshots", async () => {
+    const p = (await ps()).find((p) => p.status === "published")!;
+    const input = buy(p, {
+      items: p.variants
+        .slice(0, 2)
+        .map((v, i) => ({ productId: p.id, sku: v.sku, quantity: i + 1 })),
+    });
+    const o = await rpc<Order>("wm_checkout", { input });
+    expect(o.total).toBe(p.price * 3 + (p.price * 3 >= 15000 ? 0 : 495));
+    const updated = (await ps()).find((x) => x.id === p.id)!;
+    expect(updated.variants[0].stock).toBe(p.variants[0].stock - 1);
+    expect(updated.variants[1].stock).toBe(p.variants[1].stock - 2);
+    await save({ ...updated, price: p.price + 1000 }, p.id);
+    const stored = await db.query<{ body: Order }>(
+      "select body from wm_orders where id=$1",
+      [o.id],
+    );
+    expect(stored.rows[0].body.items[0].price).toBe(p.price);
+    const retry = await rpc<Order>("wm_checkout", { input });
+    expect(retry.id).toBe(o.id);
+    await expect(
+      rpc("wm_checkout", { input: { ...input, name: "Changed" } }),
+    ).rejects.toThrow("al gebruikt");
+  });
+  it("rolls all stock back when any line fails", async () => {
+    const p = (await ps()).find((p) => p.status === "published")!;
+    const before = await ps();
+    await expect(
+      rpc("wm_checkout", {
+        input: buy(p, {
+          items: [
+            { productId: p.id, sku: p.variants[0].sku, quantity: 1 },
+            { productId: p.id, sku: "missing", quantity: 1 },
+          ],
+        }),
+      }),
+    ).rejects.toThrow("Onvoldoende");
+    expect(await ps()).toEqual(before);
+    const line = { productId: p.id, sku: p.variants[0].sku, quantity: 1 };
+    await expect(
+      rpc("wm_checkout", { input: buy(p, { items: [line, line] }) }),
+    ).rejects.toThrow("Dubbele");
+  });
+  it("sells the last item only once and serializes duplicate requests", async () => {
+    const p = await save({
+      ...demoProducts()[0],
+      slug: "last",
+      variants: [{ size: "M", color: "Black", sku: "LAST-M", stock: 1 }],
+    });
+    const results = await Promise.allSettled([
+      rpc("wm_checkout", { input: buy(p) }),
+      rpc("wm_checkout", { input: buy(p) }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect((await ps()).find((x) => x.id === p.id)!.variants[0].stock).toBe(0);
+  });
+  it("rejects duplicate slugs/SKUs and rolls the whole product edit back", async () => {
+    const p = (await ps())[0];
+    const before = await ps();
+    await expect(save(p)).rejects.toThrow("URL");
+    await expect(save({ ...p, slug: "duplicate-sku" })).rejects.toThrow("SKU");
+    expect(await ps()).toEqual(before);
+  });
+  it("enforces order status transitions and deduplicates waitlists", async () => {
+    const { rows } = await db.query<{ id: string }>(
+      "select id from wm_orders limit 1",
+    );
+    await expect(
+      rpc("wm_update_order", { order_id: rows[0].id, next_status: "shipped" }),
+    ).rejects.toThrow("statusovergang");
+    await rpc("wm_update_order", {
+      order_id: rows[0].id,
+      next_status: "packed",
+    });
+    await rpc("wm_update_order", {
+      order_id: rows[0].id,
+      next_status: "shipped",
+    });
+    const p = (await ps()).find((p) => p.status === "scheduled")!;
+    for (let i = 0; i < 2; i++)
+      await rpc("wm_join_waitlist", {
+        product_id: p.id,
+        email_address: "test@example.invalid",
+      });
+    expect(
+      (await db.query<{ n: number }>("select count(*)::int n from wm_waitlist"))
+        .rows[0].n,
+    ).toBe(1);
+  });
+  it("persists rate limits across calls", async () => {
+    expect(await rpc("wm_rate_limit", { bucket: "test", maximum: 1 })).toBe(
+      true,
+    );
+    expect(await rpc("wm_rate_limit", { bucket: "test", maximum: 1 })).toBe(
+      false,
+    );
+  });
+  it("protects drafts, orders, settings and privileged RPCs with RLS/grants", async () => {
+    await db.exec("set role anon");
+    try {
+      const rows = await ps();
+      expect(
+        rows.every((p) => p.status === "published" || p.status === "scheduled"),
+      ).toBe(true);
+      expect((await db.query("select * from wm_settings")).rows).toHaveLength(
+        1,
+      );
+      await expect(db.query("select * from wm_orders")).rejects.toThrow(
+        "permission denied",
+      );
+      await expect(rpc("wm_publish_due")).rejects.toThrow("permission denied");
+      await expect(
+        db.query("update wm_products set body='{}'"),
+      ).rejects.toThrow("permission denied");
+    } finally {
+      await db.exec("reset role");
+    }
+    await db.exec(
+      `set role authenticated; set "request.jwt.claims"='{"user_metadata":{"role":"admin"}}'`,
+    );
+    try {
+      expect((await db.query("select * from wm_orders")).rows).toHaveLength(0);
+    } finally {
+      await db.exec("reset role; reset request.jwt.claims");
+    }
+    expect(
+      (
+        await db.query<{ n: number }>(
+          "select count(*)::int n from pg_class where relname like 'wm_%' and relkind='r' and not relrowsecurity",
+        )
+      ).rows[0].n,
+    ).toBe(0);
+  });
+  it("validates product data and Amsterdam DST", () => {
+    const p = demoProducts()[0];
     expect(
       productSchema.safeParse({ ...p, status: "scheduled", releaseAt: null })
         .success,
     ).toBe(false);
-  });
-  it("publiceert verschuldigde releases eenmaal, ook zonder bezoeker", () => {
-    const original = products()[0];
-    const p = saveProduct({
-      ...original,
-      name: "Timed release",
-      slug: "timed-release",
-      status: "scheduled",
-      releaseAt: "2026-01-01T12:00:00.000Z",
-      variants: [{ size: "M", color: "Black", sku: "TIMED-M", stock: 5 }],
-    });
-    expect(publishDue(Date.parse("2026-01-01T11:59:59Z"))).toBe(0);
-    expect(publishDue(Date.parse("2026-01-01T12:00:00Z"))).toBe(1);
-    expect(products().find((x) => x.id === p.id)!.status).toBe("published");
-    expect(publishDue(Date.parse("2026-01-01T12:00:01Z"))).toBe(0);
-  });
-  it("publiceert een geannuleerde release niet", () => {
-    const original = products()[0];
-    const p = saveProduct({
-      ...original,
-      name: "Cancelled release",
-      slug: "cancelled-release",
-      status: "scheduled",
-      releaseAt: "2026-01-02T12:00:00.000Z",
-      variants: [{ size: "M", color: "Black", sku: "CANCEL-M", stock: 5 }],
-    });
-    saveProduct({ ...p, status: "draft" }, p.id);
-    publishDue(Date.parse("2026-01-02T12:00:01Z"));
-    expect(products().find((x) => x.id === p.id)!.status).toBe("draft");
-  });
-  it("weigert negatieve voorraad en onveilige media", () => {
-    const p = products()[0];
     expect(
       productSchema.safeParse({
         ...p,
@@ -99,100 +222,7 @@ describe("releases en validatie", () => {
     expect(
       productSchema.safeParse({ ...p, image: "javascript:alert(1)" }).success,
     ).toBe(false);
-  });
-});
-describe("transactionele demo-checkout", () => {
-  it("berekent prijzen uit de database en bewaart een snapshot", () => {
-    const p = products()[0],
-      v = p.variants[0];
-    const o = checkout({
-      ...customer(),
-      items: [{ productId: p.id, sku: v.sku, quantity: 2 }],
-    });
-    expect(o.total).toBe(p.price * 2 + (p.price * 2 >= 15000 ? 0 : 495));
-    expect(products().find((x) => x.id === p.id)!.variants[0].stock).toBe(
-      v.stock - 2,
-    );
-    saveProduct({ ...p, price: p.price + 1000 }, p.id);
-    expect(orders().find((x) => x.id === o.id)!.items[0].price).toBe(p.price);
-  });
-  it("verwerkt dezelfde aanvraag exact één keer", () => {
-    const p = products()[1],
-      v = p.variants[0],
-      c = {
-        ...customer(),
-        items: [{ productId: p.id, sku: v.sku, quantity: 1 }],
-      };
-    const a = checkout(c),
-      b = checkout(c);
-    expect(a.id).toBe(b.id);
-    expect(products().find((x) => x.id === p.id)!.variants[0].stock).toBe(
-      v.stock - 1,
-    );
-  });
-  it("draait de volledige bestelling terug bij onvoldoende voorraad", () => {
-    const p = products()[2],
-      v = p.variants[0];
-    const before = orders().length;
-    expect(() =>
-      checkout({
-        ...customer(),
-        items: [
-          { productId: p.id, sku: v.sku, quantity: 1 },
-          { productId: p.id, sku: p.variants[1].sku, quantity: 999999 },
-        ],
-      }),
-    ).toThrow("Onvoldoende");
-    expect(products().find((x) => x.id === p.id)!.variants[0].stock).toBe(
-      v.stock,
-    );
-    expect(orders().length).toBe(before);
-  });
-  it("verwerkt meerdere maten van één product correct", () => {
-    const p = products()[3],
-      a = p.variants[0],
-      b = p.variants[1];
-    checkout({
-      ...customer(),
-      items: [
-        { productId: p.id, sku: a.sku, quantity: 1 },
-        { productId: p.id, sku: b.sku, quantity: 2 },
-      ],
-    });
-    const updated = products().find((x) => x.id === p.id)!;
-    expect(updated.variants[0].stock).toBe(a.stock - 1);
-    expect(updated.variants[1].stock).toBe(b.stock - 2);
-  });
-  it("voorkomt dubbele SKU-regels", () => {
-    const p = products()[0];
-    const line = { productId: p.id, sku: p.variants[0].sku, quantity: 1 };
-    expect(() => checkout({ ...customer(), items: [line, line] })).toThrow(
-      "Dubbele",
-    );
-  });
-  it("verkoopt het laatste artikel eenmaal", () => {
-    const original = products()[0];
-    const p = saveProduct({
-      ...original,
-      name: "Laatste exemplaar",
-      slug: "laatste-exemplaar",
-      variants: [{ size: "M", color: "Black", sku: "LAST-M", stock: 1 }],
-    });
-    checkout({
-      ...customer(),
-      items: [{ productId: p.id, sku: "LAST-M", quantity: 1 }],
-    });
-    expect(() =>
-      checkout({
-        ...customer(),
-        items: [{ productId: p.id, sku: "LAST-M", quantity: 1 }],
-      }),
-    ).toThrow("Onvoldoende");
-    expect(products().find((x) => x.id === p.id)!.variants[0].stock).toBe(0);
-  });
-  it("voorkomt dubbele slugs en SKU’s in productbeheer", () => {
-    const p = products()[0];
-    expect(() => saveProduct(p)).toThrow("URL");
-    expect(() => saveProduct({ ...p, slug: "new-product" })).toThrow("SKU");
+    expect(date("2026-10-25T00:30:00Z")).toContain("02:30");
+    expect(date("2026-10-25T01:30:00Z")).toContain("02:30");
   });
 });

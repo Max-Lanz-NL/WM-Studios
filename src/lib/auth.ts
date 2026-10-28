@@ -1,46 +1,52 @@
 import { cookies } from "next/headers";
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { db } from "./db";
-function secret() {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 32)
-    throw new Error("Configureer SESSION_SECRET (32+ tekens)");
-  return s;
-}
-export function sign(value: string) {
-  return createHmac("sha256", secret()).update(value).digest("hex");
-}
+import { timingSafeEqual } from "node:crypto";
+import { database, rpc, required, ConfigurationError } from "./supabase";
+export const adminCookie =
+  process.env.NODE_ENV === "production" ? "__Host-wm_access" : "wm_access";
 export function equal(a: string, b: string) {
   const x = Buffer.from(a),
     y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);
 }
 export async function isAdmin() {
-  const c = (await cookies()).get("wm_admin")?.value;
-  if (!c) return false;
-  const [exp, sig] = c.split(".");
-  return Number(exp) > Date.now() && equal(sign(exp), sig || "");
+  const token = (await cookies()).get(adminCookie)?.value;
+  if (!token) return false;
+  const { data, error } = await database().auth.getUser(token);
+  return !error && data.user?.app_metadata?.role === "admin";
 }
 export async function requireAdmin() {
   if (!(await isAdmin())) throw new Error("UNAUTHORIZED");
 }
-export function rateLimit(key: string, max = 8) {
-  const d = db(),
-    now = Date.now();
-  const r = d.prepare("SELECT count,reset FROM attempts WHERE id=?").get(key);
-  if (!r || Number(r.reset) < now) {
-    d.prepare(
-      "INSERT INTO attempts VALUES (?,1,?) ON CONFLICT(id) DO UPDATE SET count=1,reset=excluded.reset",
-    ).run(key, now + 60000);
-    return;
-  }
-  if (Number(r.count) >= max)
+export async function rateLimit(key: string, max = 8) {
+  const allowed = await rpc<boolean>("wm_rate_limit", {
+    bucket: key,
+    maximum: max,
+  });
+  if (!allowed)
     throw new Error("Te veel verzoeken. Probeer het over een minuut opnieuw.");
-  d.prepare("UPDATE attempts SET count=count+1 WHERE id=?").run(key);
 }
 export function sameOrigin(request: Request) {
-  const url = new URL(request.url);
-  const host = request.headers.get("host") || url.host;
-  if (request.headers.get("origin") !== `${url.protocol}//${host}`)
+  // Next/Vercel may normalize request.url to an internal hostname. Authorize
+  // against a trusted deployment setting, never Host / X-Forwarded-Host input.
+  const configured = required("APP_ORIGIN");
+  let expected: URL;
+  try {
+    expected = new URL(configured);
+  } catch {
+    throw new ConfigurationError("Ongeldige configuratie: APP_ORIGIN");
+  }
+  if (
+    expected.origin !== configured ||
+    (expected.protocol !== "https:" &&
+      !(
+        expected.protocol === "http:" &&
+        ["localhost", "127.0.0.1"].includes(expected.hostname) &&
+        !process.env.VERCEL
+      ))
+  )
+    throw new ConfigurationError(
+      "APP_ORIGIN vereist de exacte HTTPS-origin zonder pad",
+    );
+  if (request.headers.get("origin") !== expected.origin)
     throw new Error("Ongeldige herkomst");
 }

@@ -6,3 +6,7 @@ data/
 test-results/
 playwright-report/
 *.tsbuildinfo
+private-imports/
+*.import.sql
+.supabase/
+supabase/.temp/

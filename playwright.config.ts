@@ -1,5 +1,4 @@
 import { defineConfig } from "@playwright/test";
-import { randomUUID } from "node:crypto";
 export default defineConfig({
   testDir: "./e2e",
   workers: 1,
@@ -8,17 +7,30 @@ export default defineConfig({
     headless: true,
     channel: process.env.PLAYWRIGHT_CHANNEL || "msedge",
   },
-  webServer: {
-    command: "npm run dev -- --port 3001",
-    url: "http://127.0.0.1:3001",
-    reuseExistingServer: false,
-    env: {
-      APP_MODE: "demo",
-      ADMIN_PASSWORD: "local-e2e-test-password-only",
-      SESSION_SECRET: "local-e2e-test-secret-at-least-thirty-two-characters",
-      DATABASE_PATH:
-        process.env.E2E_DATABASE_PATH || `./data/e2e-${randomUUID()}.sqlite`,
+  webServer: [
+    {
+      command: "node --import tsx scripts/test-backend.ts",
+      url: "http://127.0.0.1:54329/health",
+      reuseExistingServer: false,
+      timeout: 120000,
     },
-    timeout: 120000,
-  },
+    {
+      command:
+        process.env.E2E_PRODUCTION === "true"
+          ? "node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3001"
+          : "node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3001",
+      url: "http://127.0.0.1:3001/admin",
+      reuseExistingServer: false,
+      timeout: 120000,
+      env: {
+        APP_ORIGIN: "http://127.0.0.1:3001",
+        SUPABASE_URL: "http://127.0.0.1:54329",
+        SUPABASE_PUBLISHABLE_KEY: "test-publishable",
+        SUPABASE_SECRET_KEY: "test-secret",
+        DEPLOYMENT_ENV: "staging",
+        ENABLE_TEST_CHECKOUT: "true",
+        CRON_SECRET: "local-e2e-cron-secret-at-least-thirty-two-characters",
+      },
+    },
+  ],
 });

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { checkout, db, visibleProducts } from "@/lib/db";
+import { checkout, waitlist } from "@/lib/db";
 import { rateLimit, sameOrigin } from "@/lib/auth";
-import { randomUUID } from "node:crypto";
+import { ConfigurationError } from "@/lib/supabase";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const b = await request.json();
     if (b.action === "checkout") {
-      rateLimit("checkout", 60);
+      await rateLimit("checkout", 60);
       const input = z
         .object({
           key: z.string().uuid(),
@@ -28,11 +28,11 @@ export async function POST(request: Request) {
             .max(30),
         })
         .parse(b);
-      const o = checkout(input);
+      const o = await checkout(input);
       return NextResponse.json({ number: o.number, total: o.total });
     }
     if (b.action === "waitlist") {
-      rateLimit("waitlist", 30);
+      await rateLimit("waitlist", 30);
       const input = z
         .object({
           productId: z.string().uuid(),
@@ -40,20 +40,7 @@ export async function POST(request: Request) {
           consent: z.literal(true),
         })
         .parse(b);
-      if (
-        !visibleProducts().some(
-          (p) => p.id === input.productId && p.status === "scheduled",
-        )
-      )
-        throw new Error("Release niet gevonden");
-      db()
-        .prepare("INSERT OR IGNORE INTO waitlist VALUES (?,?,?,?)")
-        .run(
-          randomUUID(),
-          input.productId,
-          input.email.toLowerCase(),
-          new Date().toISOString(),
-        );
+      await waitlist(input.productId, input.email);
       return NextResponse.json({ ok: true });
     }
     throw new Error("Onbekende actie");
@@ -67,7 +54,10 @@ export async function POST(request: Request) {
               ? e.message
               : "Verzoek mislukt",
       },
-      { status: 400 },
+      {
+        status: e instanceof ConfigurationError ? 503 : 400,
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   }
 }

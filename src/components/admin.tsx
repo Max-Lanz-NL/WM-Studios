@@ -120,17 +120,29 @@ export default function Admin({
           <p>De werkruimte voor alles wat je maakt, lanceert en verkoopt.</p>
           <form
             action={async (f) => {
-              await send({ action: "login", password: f.get("password") });
+              await send({
+                action: "login",
+                email: f.get("email"),
+                password: f.get("password"),
+              });
             }}
           >
             <label>
-              Beheerwachtwoord
+              E-mailadres
+              <input
+                name="email"
+                type="email"
+                required
+                autoComplete="username"
+              />
+            </label>
+            <label>
+              Wachtwoord
               <input
                 name="password"
                 type="password"
                 required
                 autoComplete="current-password"
-                minLength={12}
               />
             </label>
             <button className="button dark full" disabled={busy}>
@@ -773,18 +785,18 @@ export default function Admin({
               </div>
               {[
                 {
-                  name: "Lokale SQLite-database",
+                  name: "Centrale productopslag",
                   text: "Actief · Producten, varianten, orders, wachtlijsten, auditlog en homepage.",
                   active: true,
                 },
                 {
                   name: "Beheerbeveiliging",
-                  text: "Actief · Servercontrole, ondertekende sessie, HTTP-only cookie, rate limiting.",
+                  text: "Actief · Persoonlijke beheerlogin, servercontrole en HTTP-only sessiecookie.",
                   active: true,
                 },
                 {
-                  name: "Supabase & rollen",
-                  text: "Nog niet aangesloten · PostgreSQL, Auth, RLS, Storage en afzonderlijke medewerkersaccounts.",
+                  name: "Medewerkersrechten",
+                  text: "Beheerders hebben volledige toegang. Uitgebreide medewerkersrollen en media-uploads volgen later.",
                 },
                 {
                   name: "Mollie",
@@ -796,11 +808,11 @@ export default function Admin({
                 },
                 {
                   name: "Resend & productietaken",
-                  text: "Lokale releaseworker beschikbaar. Beheerde productietaken en e-mail zijn nog niet aangesloten.",
+                  text: "Automatische releasepublicatie vereist een ingestelde scheduler. E-mail is nog niet aangesloten.",
                 },
                 {
                   name: "Productiehosting",
-                  text: "Geblokkeerd voor deze versie · De lokale database is niet geschikt voor Vercel.",
+                  text: "Serveropslag is voorbereid. Controleer de deployment en configuratie vóór ingebruikname.",
                 },
               ].map((x) => (
                 <div className="integration" key={x.name}>
