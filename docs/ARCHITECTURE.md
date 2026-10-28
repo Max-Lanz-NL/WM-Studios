@@ -1,31 +1,29 @@
-# Architectuur en implementatieplan
+# Architectuur
 
-## Repositoryanalyse
+## Requestpad
 
-De opgegeven openbare GitHub-repository was leeg. Er was geen bestaande implementatie, database, deployment of functionaliteit om over te nemen. De eerste mijlpaal is een uitvoerbare verticale doorsnede: productconcept → release → verkoop → orderverwerking. Dit geeft de oprichters een concrete basis om vormgeving en dagelijkse workflow te beoordelen.
+Next.js Server Components lezen de publieke catalogus en homepage via de Supabase Data API met publishable key en RLS. Serverroutes valideren alle mutaties met Zod en controleren de Origin. Beheerroutes controleren bij elke aanvraag het Supabase Auth-token via `getUser` en de actuele `app_metadata.role`. Alleen servercode kan de Supabase secret key gebruiken.
 
-## Huidige structuur
+De beheerinterface blijft een clientcomponent. Die ontvangt alleen de voor die geauthenticeerde beheerder geladen data. Een ongeautoriseerde `/admin`-aanvraag laadt geen catalogusbeheer, orders of wachtlijstgegevens. De authsessie wordt niet gedeeld tussen requests en antwoorden zijn niet cachebaar.
 
-- `src/app`: serverpagina's en gevalideerde mutatie-API's.
-- `src/components`: interactieve webshop en afgeschermde beheerwerkruimte.
-- `src/lib/model.ts`: validaties, geldbedragen in eurocenten en verkoopstartregels.
-- `src/lib/db.ts`: lokale repository, transactiegrenzen, seed en auditgebeurtenissen.
-- `src/lib/auth.ts`: beheerautorisatie, sessieondertekening, rate limiting en herkomstcontrole.
-- `scripts/release-worker.ts`: onafhankelijke, herstartbare lokale releasecontrole.
-- `tests` en `e2e`: regressies voor bedrijfsregels en complete gebruikersflows.
+## Opslag
 
-Alle mutaties worden op de server gecontroleerd. De browser levert SKU en aantallen, nooit een vertrouwde prijs of orderstatus. Orders bevatten een snapshot van naam, variant en prijs. Een `BEGIN IMMEDIATE`-transactie serialiseert voorraadwijzigingen tussen SQLite-verbindingen. Een unieke idempotentiesleutel voorkomt dubbele orderopslag bij opnieuw versturen van dezelfde checkout.
+`supabase/migrations` bevat het namespaced schema: producten, SKU-index, orders, wachtlijst, audit, settings en rate limits. Het bestaande JSON-product/orderformaat blijft bewaard om de webshopflows en historische snapshots te behouden. Unieke slugs, SKU's, idempotentiesleutels en relaties zijn databaseconstraints. Iedere blootgestelde tabel heeft RLS en expliciete grants.
 
-Producten in concept, review, goedgekeurd of gearchiveerd worden niet aan de publieke component doorgegeven. Geplande producten zijn bewust publieke Coming Soon-producten; geheime preview-releases zijn nog niet ondersteund. Elke toekomstige publicatiestatus moet daarom een afzonderlijke zichtbaarheidstoets krijgen.
+Schrijf-RPC's zijn `SECURITY INVOKER`, met lege `search_path`, en alleen uitvoerbaar door `service_role`. De server geeft die bevoegdheid pas na autorisatie door, behalve de specifiek begrensde publieke checkout/wachtlijst/rate-limitflows. Anonieme clients kunnen deze functies niet rechtstreeks oproepen. Checkout is standaard zowel in de app als database uitgeschakeld.
 
-## Productiearchitectuur: volgende implementatiefase
+Productwijzigingen, releases en checkout gebruiken dezelfde transactionele advisory lock. Alle stockwijzigingen, snapshots en auditregels van een checkout worden samen gecommit of teruggedraaid. De server gebruikt de opgeslagen prijzen. Een idempotentiesleutel levert alleen voor een identieke aanvraag dezelfde order op. Orders worden met een rijlock van `paid_demo` naar `packed` naar `shipped` verwerkt.
 
-Vervang de lokale repository door services rond Supabase PostgreSQL met genormaliseerde tabellen en migraties. Modelleer eerst brands, collections, products, variants, media, releases, release_products, inventory_movements, reservations, orders, order_items en payment_events. Voeg ordersnapshots, unieke providersleutels, transactiefuncties, foreign keys en indexen toe. Alle blootgestelde tabellen krijgen RLS met expliciete rechten; kosten, klantgegevens en interne ontwerpen blijven afgeschermd.
+Geplande producten zijn bewust publiek zichtbaar als Coming Soon. Concept, review, approved en archived blijven verborgen. Verkoopstart gebruikt UTC en wordt bij checkout opnieuw gecontroleerd. De interface toont Europe/Amsterdam.
 
-Vervang de gedeelde demo-login door Supabase Auth, servergeverifieerde identiteit, medewerkerlidmaatschappen, configureerbare rechten en MFA voor beheerders. Geen bevoegdheid uit door gebruikers bewerkbare metadata afleiden. Beide eigenaren kunnen dezelfde volledige rechten krijgen.
+## Achtergrondpublicatie
 
-Vervolgens: Mollie-testbetalingen met voorraadreservering en expiratie, geverifieerde providerstatus en idempotente webhookverwerking. Betaalredirects wijzigen nooit zelfstandig een order in betaald. Achtergrondtaken voor releases en e-mail moeten transactionele outbox-records claimen en veilig herhalen.
+Supabase Cron kan `wm_publish_due()` iedere minuut in de database uitvoeren. `supabase/scheduler.sql` is een apart infrastructuurscript: geen extensies of externe jobs worden automatisch in bestaande projecten veranderd. Een dagelijkse Vercel-cron is een beveiligd vangnet, passend binnen Hobby. Pro kan de HTTP-route ook iedere minuut inroepen. Herhaling en overlappende runs zijn veilig en halen achterstand in.
 
-Daarna: Sendcloud-labelgeneratie met unieke shipment-sleutel, herdrukken van hetzelfde label, tracking en handmatige overdracht. Printertoegang gebeurt via de afdrukdialoog of een expliciet gekozen lokale printbridge. Retourontvangst, inspectie, voorraadterugplaatsing en providerrefund zijn afzonderlijke geautoriseerde gebeurtenissen.
+## Migratie en herstel
 
-De laatste fasen omvatten CMS-secties en revisies, marketingtoestemming, financieel onderscheid tussen omzet en marge, toegankelijkheid, monitoring, staging, back-ups en gecontroleerde productie-uitrol. Een livegang blijft geblokkeerd tot deze onderdelen aantoonbaar werken.
+De oorspronkelijke commit en herstelbranch blijven bewaard. De SQLite-exporter opent de bron uitsluitend read-only en produceert een transactiescript dat alleen een lege doelcatalogus accepteert. Er is geen automatische dataverwijdering of migratie bij applicatiestart. Zie [deployment en rollback](DEPLOYMENT.md).
+
+## Volgende fasen
+
+Mollie vereist eerst testbetalingen, voorraadreserveringen met expiratie, webhookverificatie en idempotente provider-events. Betaalredirects mogen geen betaalstatus bepalen. Shipping, e-mail/outbox, returns, MFA en fijnmazige medewerkersrechten blijven afzonderlijke fasen. De huidige implementatie heeft geen live-betaalpad.

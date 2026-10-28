@@ -4,10 +4,10 @@ Deze oplevering is een geteste lokale tussenstand. Geen van de acht hoofdfasen i
 
 | Fase | Werkende tussenstand | Nog nodig |
 |---|---|---|
-| Fundament | Next.js, strict TS, validatie, lokale opslag, gedeelde beveiligde beheerlogin | Supabase PostgreSQL-migraties, Auth, rollen, RLS, Storage, MFA, aparte omgevingen |
+| Fundament | Next.js, strict TS, validatie, Supabase PostgreSQL-migratie, Auth-adminrol en RLS | Hosted validatie, Storage, MFA en fijnmazige medewerkersrollen |
 | Website | Homepage, shop, productdetails, filters, wishlist, responsive navigatie, conceptinformatie | Eigen productbeelden, aparte merk-/collectiepagina's, klantaccount, bestelgeschiedenis, alle definitieve informatiepagina's |
 | Producten | CRUD zonder harde verwijdering, varianten, SKU's, voorraad en status | Upload, crop, media-volgorde, maatgroepen, SEO, kosten, leveranciers, bulkacties, paginering, dynamische merken/collecties |
-| Releases | UTC-invoer, Amsterdam-weergave, Coming Soon, countdown, wachtlijst, lokale publicatieworker | Lokale datumkiezer met DST-validatie, collectiedrops, kalender, preview, goedkeuringshistorie, afmelden, bevestigingsmails en notificatie-outbox |
+| Releases | UTC-invoer, Amsterdam-weergave, Coming Soon, countdown, wachtlijst, SQL-publicatiefunctie en schedulerconfiguratie | Hosted schedulercontrole, lokale datumkiezer met DST-validatie, collectiedrops, kalender, preview, goedkeuringshistorie, afmelden, bevestigingsmails en notificatie-outbox |
 | Verkoop | Persistente mand, demo-checkout, transactievoorraad, snapshots, idempotente demo-orders | Mollie-sandbox, reserveringen, expiratie, webhooks, korting, btw-specificatie, adresvalidatie, factuuradressen |
 | Verwerking | Demo-orderlijst, lokale pickhulp, statusovergangen, CSV | Gedeeltelijke fulfillment, barcodes, Sendcloud, tracking, labels, printerdialoog/bridge, audit-tijdlijn in UI |
 | Bedrijfsvoering | Databasecijfers, basisvoorraadlijst, hero-teksteditor | Retourportaal, refunds, klantenbeheer, marketing, financieel dashboard, CMS-secties, versiebeheer, transactiemail |

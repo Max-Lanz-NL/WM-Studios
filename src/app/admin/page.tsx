@@ -1,5 +1,5 @@
 import { isAdmin } from "@/lib/auth";
-import { products, orders, home, db } from "@/lib/db";
+import { products, orders, home, waitlistCount } from "@/lib/db";
 import Admin from "@/components/admin";
 export const dynamic = "force-dynamic";
 export default async function Page() {
@@ -7,14 +7,10 @@ export default async function Page() {
   return (
     <Admin
       authorized={authorized}
-      products={authorized ? products() : []}
-      orders={authorized ? orders() : []}
-      content={authorized ? home() : { headline: "", subtitle: "" }}
-      waitlist={
-        authorized
-          ? Number(db().prepare("SELECT COUNT(*) as n FROM waitlist").get()!.n)
-          : 0
-      }
+      products={authorized ? await products() : []}
+      orders={authorized ? await orders() : []}
+      content={authorized ? await home() : { headline: "", subtitle: "" }}
+      waitlist={authorized ? await waitlistCount() : 0}
     />
   );
 }

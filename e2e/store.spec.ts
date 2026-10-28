@@ -1,13 +1,96 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 const origin = "http://127.0.0.1:3001";
+test("uitloggen verwijdert ook de Secure-beheercookie", async ({ request }) => {
+  const headers = { origin };
+  const login = await request.post("/api/admin", {
+    headers,
+    data: {
+      action: "login",
+      email: "admin@example.invalid",
+      password: "local-e2e-test-password-only",
+    },
+  });
+  expect(login.status()).toBe(200);
+  expect(login.headers()["cache-control"]).toContain("no-store");
+  const session = await request.storageState();
+  expect(
+    session.cookies.some(
+      (c) =>
+        c.httpOnly && (c.name === "wm_access" || c.name === "__Host-wm_access"),
+    ),
+  ).toBe(true);
+  expect(
+    (
+      await request.post("/api/admin", { headers, data: { action: "logout" } })
+    ).status(),
+  ).toBe(200);
+  expect(
+    (await request.storageState()).cookies.some((c) =>
+      c.name.endsWith("wm_access"),
+    ),
+  ).toBe(false);
+  expect(
+    (
+      await request.post("/api/admin", {
+        headers,
+        data: {
+          action: "home",
+          content: { headline: "No access", subtitle: "" },
+        },
+      })
+    ).status(),
+  ).toBe(401);
+});
+test("shop, details, loginrollen en beveiligde releasecron", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/shop");
+  await expect(
+    page.getByRole("link", { name: "The Essential Tee", exact: true }).last(),
+  ).toBeVisible();
+  await page.goto("/products/the-essential-tee");
+  await expect(page.getByRole("button", { name: "Add to bag" })).toBeVisible();
+  const member = await request.post("/api/admin", {
+    headers: { origin },
+    data: {
+      action: "login",
+      email: "member@example.invalid",
+      password: "local-e2e-test-password-only",
+    },
+  });
+  expect(member.status()).toBe(401);
+  const wrong = await request.post("/api/admin", {
+    headers: { origin },
+    data: {
+      action: "login",
+      email: "admin@example.invalid",
+      password: "wrong",
+    },
+  });
+  expect(wrong.status()).toBe(401);
+  expect((await request.get("/api/cron/releases")).status()).toBe(401);
+  const cron = await request.get("/api/cron/releases", {
+    headers: {
+      authorization:
+        "Bearer local-e2e-cron-secret-at-least-thirty-two-characters",
+    },
+  });
+  expect(cron.status()).toBe(200);
+  expect((await cron.json()).published).toBe(0);
+});
 test("gelijktijdige kopers kunnen het laatste artikel niet dubbel kopen", async ({
   request,
 }) => {
   const headers = { origin };
   const login = await request.post("/api/admin", {
     headers,
-    data: { action: "login", password: "local-e2e-test-password-only" },
+    data: {
+      action: "login",
+      email: "admin@example.invalid",
+      password: "local-e2e-test-password-only",
+    },
   });
   expect(login.ok()).toBe(true);
   const token = Date.now();
@@ -119,8 +202,11 @@ test("klant plaatst demo-order en beheerder verwerkt deze", async ({
   ).toBeVisible();
   await page.goto("/admin");
   await page
-    .getByLabel("Beheerwachtwoord")
+    .getByLabel("Wachtwoord", { exact: true })
     .fill("local-e2e-test-password-only");
+  await page
+    .getByLabel("E-mailadres", { exact: true })
+    .fill("admin@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(
     page.getByRole("heading", { name: "A new day in the studio." }),
@@ -138,8 +224,11 @@ test("klant plaatst demo-order en beheerder verwerkt deze", async ({
 test("producteditor slaat een nieuw concept op", async ({ page }) => {
   await page.goto("/admin");
   await page
-    .getByLabel("Beheerwachtwoord")
+    .getByLabel("Wachtwoord", { exact: true })
     .fill("local-e2e-test-password-only");
+  await page
+    .getByLabel("E-mailadres", { exact: true })
+    .fill("admin@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await page.getByRole("button", { name: "Nieuw product" }).click();
   await page
@@ -180,17 +269,18 @@ test("desktop preview", async ({ page }) => {
     .evaluateAll((images) =>
       images.forEach((img) => img.setAttribute("loading", "eager")),
     );
-  await page.waitForFunction(() =>
-    Array.from(document.images).every((img) => img.complete),
-  );
+
   await page.screenshot({
     path: "test-results/storefront.png",
     fullPage: true,
   });
   await page.goto("/admin");
   await page
-    .getByLabel("Beheerwachtwoord")
+    .getByLabel("Wachtwoord", { exact: true })
     .fill("local-e2e-test-password-only");
+  await page
+    .getByLabel("E-mailadres", { exact: true })
+    .fill("admin@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(
     page.getByRole("heading", { name: "A new day in the studio." }),

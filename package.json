@@ -11,7 +11,8 @@
     "test": "vitest run",
     "setup": "node scripts/setup.mjs",
     "test:e2e": "playwright test",
-    "jobs": "node --env-file=.env.local --import tsx scripts/release-worker.ts",
+    "seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
+    "export:sqlite": "node --import tsx scripts/export-sqlite.ts",
     "format": "prettier --write src scripts tests e2e *.ts *.json"
   },
   "repository": {
@@ -27,6 +28,7 @@
   },
   "homepage": "https://github.com/Max-Lanz-NL/WM-Studios#readme",
   "dependencies": {
+    "@supabase/supabase-js": "2.118.0",
     "lucide-react": "^1.61.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
@@ -34,14 +36,20 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "prettier": "^3.9.10",
+    "supabase": "2.122.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   },
-  "private": true
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.14.0"
+  }
 }
