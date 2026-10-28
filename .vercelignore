@@ -1,0 +1,13 @@
+.git/
+.next/
+node_modules/
+.env*
+data/
+test-results/
+playwright-report/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.tsbuildinfo
+supabase/.temp/
+supabase/.branches/

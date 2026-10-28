@@ -10,3 +10,4 @@ playwright-report/
 *.sqlite-wal
 *.sqlite-shm
 legacy-export*.json
+.vercel/
