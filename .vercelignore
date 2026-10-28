@@ -1,5 +1,6 @@
 .git/
 .next/
+.next-test/
 node_modules/
 .env*
 data/

@@ -21,6 +21,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120000,
       env: {
+        WM_TEST_BUILD: "1",
         APP_ENV: "local",
         APP_ORIGIN: "http://127.0.0.1:3001",
         SUPABASE_URL: "http://127.0.0.1:54329",

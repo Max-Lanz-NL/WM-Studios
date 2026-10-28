@@ -11,13 +11,21 @@ const pages: Record<string, { title: string; text: string }> = {
   },
   privacy: {
     title: "Privacy & cookies — concept",
-    text: "Deze demo bewaart je winkelmand en favorieten lokaal in je browser. Een strikt noodzakelijke cookie beveiligt de beheersessie. Er worden geen marketingcookies geplaatst. Productafbeeldingen worden van Unsplash geladen; daarbij maakt je browser verbinding met die externe dienst. Testorders en wachtlijsten worden lokaal opgeslagen. Gebruik fictieve gegevens. Een definitieve privacyverklaring met bewaartermijnen en contactgegevens moet vóór livegang worden opgesteld.",
+    text: "Deze demo bewaart je winkelmand en favorieten lokaal in je browser. Een strikt noodzakelijke cookie beveiligt de beheersessie. Er worden geen marketingcookies geplaatst. Productafbeeldingen worden van Unsplash geladen; daarbij maakt je browser verbinding met die externe dienst. Testorders en wachtlijsten worden centraal opgeslagen in de Supabase-database van WM Studio Collective. Vercel verzorgt de hosting van deze testversie. Gebruik fictieve gegevens. Een definitieve privacyverklaring met bewaartermijnen en contactgegevens moet vóór livegang worden opgesteld.",
   },
   terms: {
     title: "Algemene voorwaarden — concept",
     text: "Deze tekst is geen definitief juridisch document. De winkel is uitsluitend een ontwikkelomgeving. Er kunnen geen echte koopovereenkomsten worden gesloten. Algemene voorwaarden, consumentenrechten, herroepingsinformatie en bedrijfsgegevens moeten vóór livegang worden vastgesteld en juridisch gecontroleerd.",
   },
 };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const page = pages[(await params).slug];
+  return { title: page?.title || "Pagina niet gevonden" };
+}
 export default async function Info({
   params,
 }: {
