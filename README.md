@@ -11,10 +11,10 @@ Node.js 24.18+ en npm zijn vereist. Een volledige lokale Supabase-stack vereist 
 ```sh
 npm ci
 npm run setup
-npx supabase start
+npm run local:start
 ```
 
-Vul `.env.local` veilig in aan de hand van `.env.example` en de lokale Supabase-status. Voor een apart cloud-stagingproject: stel `APP_ENV=staging`, de HTTPS-project-URL, de overeenkomende `SUPABASE_STAGING_PROJECT_REF` en `APP_ORIGIN` in. Gebruik uitsluitend sleutels van dat stagingproject. Plaats serverkeys nooit in `NEXT_PUBLIC_*`, broncode of GitHub.
+Voor lokaal gebruik verzorgt `npm run local:provision` de veilige configuratie na het toepassen van de migraties. `.env.example` beschrijft de instellingen. De huidige scope is uitsluitend lokaal; cloud-staging vereist een afzonderlijke opdracht. Plaats serverkeys nooit in `NEXT_PUBLIC_*`, broncode of GitHub.
 
 De app maakt of reset geen database bij het starten. Pas eerst de versiebeheerbare migraties gecontroleerd toe; zie [de migratiehandleiding](docs/SUPABASE-MIGRATION.md). Een lege catalogus krijgt geen automatische demo-seed.
 
@@ -23,6 +23,23 @@ npm run dev
 ```
 
 Webshop: http://127.0.0.1:3000. Dashboard: http://127.0.0.1:3000/admin. Ontbreekt de configuratie, dan toont de app een configuratiescherm. Er is geen verborgen SQLite-fallback.
+
+## Gecontroleerde lokale omgeving
+
+De lokale kernstack is op 28 oktober 2026 met echte Supabase-diensten gevalideerd. WM Studio gebruikt eigen poorten **55321–55324**, zodat een ander lokaal project op de standaardpoorten kan blijven draaien. De kernstack bevat PostgreSQL, Auth, Data API, gateway en lokale testmail; ongebruikte realtime/storage/edge-diensten worden niet gestart.
+
+```sh
+npm run local:start
+npm run local:migrate
+npm run local:provision
+npm run db:import -- --apply
+npm run local:verify-import
+npm run dev
+```
+
+`local:provision` leest uitsluitend de CLI-status van dit project en controleert loopback én WM Studio-poorten. Het stelt twee afzonderlijke lokale testaccounts in: `max@wm-studio.test` en `willemijn@wm-studio.test`. De willekeurige wachtwoorden staan bij `LOCAL_MAX_PASSWORD` en `LOCAL_WILLEMIJN_PASSWORD` in `.env.local`. Ze worden niet afgedrukt. Een vorige configuratie wordt eerst naar de genegeerde `data`-map gekopieerd. Deze accounts en instellingen zijn uitsluitend voor lokaal testen; er wordt geen e-mail verstuurd.
+
+`local:stop` stopt uitsluitend de WM Studio-stack met behoud van gegevens. Er is geen automatische reset of volume-verwijdering. Als een eerdere onderbroken start alleen PostgreSQL heeft achtergelaten, voer dan eerst `local:stop` en daarna `local:start` uit. Voor een verse checkout moet de SQLite-export aanwezig zijn voordat de importstap kan worden uitgevoerd; de repository bevat geen persoonsgegevens of databaseback-ups.
 
 ## Bestaande gegevens migreren
 
@@ -68,9 +85,11 @@ npm test
 npm run typecheck
 npm run build
 npm run test:e2e
+npm run test:postgres
+npm run test:local
 ```
 
-De SQL-tests draaien de daadwerkelijke migraties in PGlite (PostgreSQL in een geïsoleerde testengine). De browserregressies gebruiken dezelfde SQL/RLS achter een expliciete HTTP-fixture; **Auth en PostgREST zijn daarbij testdubbels**. Ze bewijzen geen live Supabase Auth, JWT-refresh, pg_cron-installatie of gelijktijdige PostgreSQL-backends. Voor die aanvullende checks is een werkende lokale Supabase-stack of een aangewezen stagingproject nodig. Microsoft Edge wordt standaard gebruikt; `PLAYWRIGHT_CHANNEL` kan een andere geïnstalleerde browser aanwijzen.
+De standaard SQL-tests gebruiken PGlite. `test:e2e` blijft een snelle browserregressie met expliciete Auth/PostgREST-testdubbels. `test:postgres` gebruikt twee echte PostgreSQL-verbindingen; `test:local` gebruikt echte lokale Supabase Auth, sessies, RLS, checkout en Cron. De laatste twee opdrachten vereisen de geprovisioneerde lokale kernstack. Microsoft Edge wordt standaard gebruikt; `PLAYWRIGHT_CHANNEL` kan een andere geïnstalleerde browser aanwijzen.
 
 Zie [TEST-REPORT.md](docs/TEST-REPORT.md) voor de resultaten en verificatiegrenzen. [ROADMAP.md](docs/ROADMAP.md) bevat de resterende livegangvereisten.
 

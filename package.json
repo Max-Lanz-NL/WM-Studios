@@ -11,13 +11,19 @@
     "test": "vitest run",
     "setup": "node scripts/setup.mjs",
     "test:e2e": "playwright test",
-    "format": "prettier --write src scripts tests e2e *.ts *.json",
+    "format": "prettier --write src scripts tests e2e e2e-local *.ts *.json",
     "db:export": "node scripts/export-sqlite.mjs",
     "db:import": "node --env-file-if-exists=.env.local --import tsx scripts/import-legacy.ts",
     "db:verify-export": "node --import tsx scripts/verify-legacy-export.ts",
     "staff:grant": "node --env-file-if-exists=.env.local --import tsx scripts/grant-staff.ts",
     "db:status": "node --env-file-if-exists=.env.local --import tsx scripts/maintenance.ts",
-    "test:postgres": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.postgres.config.ts"
+    "test:postgres": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.postgres.config.ts",
+    "local:provision": "node --import tsx scripts/local-provision.ts",
+    "test:local": "playwright test --config playwright.local.config.ts",
+    "local:start": "node scripts/local-start.mjs",
+    "local:stop": "supabase stop --project-id wm-studio-local-staging",
+    "local:migrate": "supabase db push --local --yes",
+    "local:verify-import": "node --import tsx scripts/local-verify-import.ts"
   },
   "repository": {
     "type": "git",

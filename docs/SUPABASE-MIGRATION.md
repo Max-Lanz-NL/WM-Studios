@@ -8,7 +8,9 @@ De oorspronkelijke checkout bepaalde prijzen server-side en gebruikte een SQLite
 
 ## 2. Kies uitsluitend een leeg test-/stagingproject
 
-Deze sessie heeft geen bestaand Supabase-project gewijzigd, geen project aangemaakt en geen migraties op afstand uitgevoerd. Er was geen WM Studio-project gekoppeld. De aanwezige Schoolpulse-projecten zijn niet gebruikt.
+Er zijn geen Supabase-cloudprojecten gewijzigd of aangemaakt en geen migraties op afstand uitgevoerd. De aanwezige Schoolpulse-projecten zijn niet gebruikt. Alleen de afzonderlijke lokale WM Studio-omgeving is ingericht.
+
+Update 28 oktober: de WM Studio-kernstack is nu lokaal ingericht en geverifieerd. De huidige opdracht blijft uitsluitend lokaal. WM Studio gebruikt poorten 55321–55324. De andere lokale stack gebruikt de standaardpoorten en is niet gewijzigd. Gebruik `npm run local:start`, `local:migrate` en `local:provision` voor de afzonderlijke WM Studio-omgeving; `local:stop` behoudt de data en stopt alleen dit project.
 
 Voor lokaal gebruik: start Docker en `npx supabase start`. Voor cloud-staging: kies een nieuw, leeg WM Studio-stagingproject. Plaats URL, publishable key en secret key uitsluitend in `.env.local` of de geheime staging-hostinginstellingen. Zet de exacte projectref in `SUPABASE_STAGING_PROJECT_REF`. De applicatie weigert `APP_ENV=production`.
 
@@ -71,6 +73,10 @@ Bewaar back-up en export beveiligd buiten Git. De bron bevat mogelijk persoonsge
 Maak Auth-accounts via het gekozen project en ken beide oprichters afzonderlijk owner-rechten toe. Gebruik `STAFF_USER_ID`, `STAFF_ROLE` en `npm run staff:grant -- --apply` voor de eenmalige toekenning. Verwijder die tijdelijke instellingen daarna. Servicekeys horen nooit in de browser.
 
 Controleer met echte stagingaccounts: twee onafhankelijke logins, uitloggen, sessieverversing, gedeactiveerde medewerker, verkeerde rol, toegang via directe Data API, conceptafscherming, productwijziging na gelijktijdige verkoop, demo-checkout, orderverwerking en geplande publicatie zonder browser. Test met twee afzonderlijke PostgreSQL-verbindingen de laatste voorraad en een rollback. De lokale fixtures vervangen deze acceptatie niet.
+
+Deze basisscenario's zijn op 28 oktober aanvullend met echte lokale Auth/Data API en PostgreSQL getest. Voer ze opnieuw uit met `npm run test:local` en `npm run test:postgres`. `npm run local:verify-import` vergelijkt de oorspronkelijke producten en het private bronarchief rechtstreeks met de echte lokale database.
+
+De lokale testaccounts zijn `max@wm-studio.test` en `willemijn@wm-studio.test`. Hun wachtwoorden staan in de genegeerde `.env.local`. Ze zijn geen cloudaccounts en er zijn geen uitnodigingen of echte e-mails verstuurd.
 
 ## 7. Terugrollen
 
