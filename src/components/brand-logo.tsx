@@ -9,6 +9,7 @@ export default function BrandLogo() {
         aria-hidden="true"
       >
         <path d="M8 92 48 14H73L94 43 112 14H164L202 76 219 56H237L251 75 282 10H308L268 92H242L229 77 215 92H157L124 43 105 71H83L59 42 34 92Z" />
+        <path d="M137 14 188 92" />
       </svg>
       <span className="brand-name">
         STUDIO

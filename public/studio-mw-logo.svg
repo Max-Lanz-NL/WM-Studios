@@ -2,6 +2,6 @@
   <title id="title">Studio MW — angular ribbon monogram</title>
   <g transform="translate(20 10) scale(2)" fill="none" stroke="#22251f" stroke-width="3.2" stroke-linejoin="miter">
     <path d="M8 92 48 14H73L94 43 112 14H164L202 76 219 56H237L251 75 282 10H308L268 92H242L229 77 215 92H157L124 43 105 71H83L59 42 34 92Z"/>
-  </g>
+  <path d="M137 14 188 92" /></g>
   <text x="330" y="260" text-anchor="middle" fill="#22251f" font-family="Arial,sans-serif" font-size="30" letter-spacing="10">STUDIO MW</text>
 </svg>
