@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo, { brandName, brandText } from "./brand-logo";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -35,6 +36,7 @@ export default function Storefront({
       products.find((p) => p.id === selectedId) || null,
     ),
     [size, setSize] = useState(""),
+    [color, setColor] = useState(""),
     [query, setQuery] = useState(""),
     [brand, setBrand] = useState("All"),
     [category, setCategory] = useState("All"),
@@ -98,9 +100,11 @@ export default function Storefront({
       p.name.toLowerCase().includes(query.toLowerCase()) &&
       (!wishOnly || wish.includes(p.id)),
   );
+  const selectedColor = color || selected?.variants[0]?.color || "";
   function open(p: Product) {
     setSelected(p);
     setSize("");
+    setColor(p.variants[0]?.color || "");
     setMessage("");
   }
   function add() {
@@ -111,7 +115,7 @@ export default function Storefront({
       return;
     }
     const existing = cart.find((l) => l.sku === size);
-    if ((existing?.quantity || 0) >= v.stock) {
+    if ((existing?.quantity || 0) >= Math.min(20, v.stock)) {
       setMessage("Deze maat heeft onvoldoende voorraad.");
       return;
     }
@@ -128,11 +132,18 @@ export default function Storefront({
     setCheckout(false);
   }
   function update(sku: string, change: number) {
+    const variant = products
+      .flatMap((p) => p.variants)
+      .find((v) => v.sku === sku);
+    if (!variant) return;
     setCart((prev) =>
       prev
         .map((l) =>
           l.sku === sku
-            ? { ...l, quantity: Math.min(20, l.quantity + change) }
+            ? {
+                ...l,
+                quantity: Math.min(20, variant.stock, l.quantity + change),
+              }
             : l,
         )
         .filter((l) => l.quantity > 0),
@@ -214,26 +225,17 @@ export default function Storefront({
         </span>
       </div>
       <header className="store-header" data-ready={ready}>
-        <Link
-          href="/"
-          className="wordmark"
-          aria-label="WM Studio Collective home"
-        >
-          <b className="monogram">WM</b>
-          <span>
-            STUDIO
-            <br />
-            COLLECTIVE
-          </span>
+        <Link href="/" className="wordmark" aria-label="Studio MW home">
+          <BrandLogo />
         </Link>
         <nav aria-label="Hoofdnavigatie">
           <Link href="/shop">Shop all</Link>
           <button onClick={() => filterGender("Men")}>Men</button>
           <button onClick={() => filterGender("Women")}>Women</button>
-          <a href="#brands">
+          <a href="/#brands">
             The collective <ChevronDown size={12} />
           </a>
-          <a href="#story">Our story</a>
+          <a href="/#story">Our story</a>
         </nav>
         <div className="header-tools">
           <button aria-label="Zoeken" onClick={() => setPanel("search")}>
@@ -283,22 +285,20 @@ export default function Storefront({
               />
               <div className="hero-shade" />
               <div className="hero-top">
-                <span>WM STUDIO COLLECTIVE</span>
+                <span>STUDIO MW</span>
                 <span>THE FIRST EDITION — VOL. 01</span>
               </div>
               <div className="hero-copy">
                 <p className="eyebrow">A NEW PERSPECTIVE ON EVERYDAY WEAR</p>
-                <h1>{content.headline}</h1>
-                <p>{content.subtitle}</p>
+                <h1>{brandText(content.headline)}</h1>
+                <p>{brandText(content.subtitle)}</p>
                 <a className="button light" href="#collection">
                   Discover the collection <ArrowUpRight size={18} />
                 </a>
               </div>
               <div className="hero-bottom">
                 <span>DESIGNED WITH INTENTION. WORN YOUR WAY.</span>
-                <span>
-                  01 <i /> 03
-                </span>
+                <span>THE FIRST EDITION</span>
               </div>
               <span className="hero-index">01 / THE COLLECTIVE</span>
             </section>
@@ -324,7 +324,8 @@ export default function Storefront({
           <div className="section-heading">
             <div>
               <p className="eyebrow">THE EDIT — VOL. 01</p>
-              <h2>
+              {shopOnly && <h1 className="collection-title">The collection</h1>}
+              <h2 className={shopOnly && !wishOnly ? "sr-only" : undefined}>
                 {wishOnly
                   ? "Your favourites"
                   : shopOnly
@@ -358,20 +359,30 @@ export default function Storefront({
                 onChange={(e) => setBrand(e.target.value)}
               >
                 {["All", "WM STUDIO", "FORM", "OFF HOURS"].map((b) => (
-                  <option key={b}>{b}</option>
+                  <option key={b} value={b}>
+                    {brandName(b)}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
-          {(query || gender !== "All" || wishOnly) && (
+          {(query ||
+            gender !== "All" ||
+            wishOnly ||
+            category !== "All" ||
+            brand !== "All") && (
             <div className="filter-summary">
               {query && `Zoeken: ${query} · `}
               {gender !== "All" && `${gender} · `}
+              {category !== "All" && `${category} · `}
+              {brand !== "All" && `${brandName(brand)} · `}
               {list.length} items{" "}
               <button
                 onClick={() => {
                   setQuery("");
                   setGender("All");
+                  setCategory("All");
+                  setBrand("All");
                   setWishOnly(false);
                 }}
               >
@@ -383,21 +394,11 @@ export default function Storefront({
             {list.map((p, i) => (
               <article className="product-card" key={p.id}>
                 <div className={"product-image tone-" + (i % 4)}>
-                  <Link
-                    href={"/products/" + p.slug}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      open(p);
-                    }}
-                  >
+                  <Link href={"/products/" + p.slug}>
                     <img src={p.image} alt={p.name} loading="lazy" />
                   </Link>
                   <span className="product-badge">
-                    {!saleable(p, now || Date.now())
-                      ? "COMING SOON"
-                      : i === 0
-                        ? "THE ESSENTIAL"
-                        : ""}
+                    {!saleable(p, now || Date.now()) ? "COMING SOON" : ""}
                   </span>
                   <button
                     className="wish"
@@ -421,17 +422,9 @@ export default function Storefront({
                 </div>
                 <div className="product-meta">
                   <div>
-                    <p>{p.brand}</p>
+                    <p>{brandName(p.brand)}</p>
                     <h3>
-                      <Link
-                        href={"/products/" + p.slug}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          open(p);
-                        }}
-                      >
-                        {p.name}
-                      </Link>
+                      <Link href={"/products/" + p.slug}>{p.name}</Link>
                     </h3>
                     <span>
                       {p.variants[0]?.color} · {p.gender}
@@ -440,9 +433,10 @@ export default function Storefront({
                   <b>{euro(p.price)}</b>
                 </div>
                 <div className="swatches">
-                  <i style={{ background: i === 0 ? "#e7e3d9" : "#292a27" }} />
-                  <i style={{ background: "#aca79a" }} />
-                  <span>{p.variants.length} maten</span>
+                  <span>
+                    {new Set(p.variants.map((v) => v.color)).size} kleur(en) ·{" "}
+                    {new Set(p.variants.map((v) => v.size)).size} maten
+                  </span>
                 </div>
               </article>
             ))}
@@ -496,10 +490,10 @@ export default function Storefront({
                     <img
                       loading="lazy"
                       src={`https://images.unsplash.com/${b.img}?auto=format&fit=crop&w=900&q=85`}
-                      alt={`Editorial voor ${b.name}`}
+                      alt={`Editorial voor ${brandName(b.name)}`}
                     />
                     <div>
-                      <h3>{b.name}</h3>
+                      <h3>{brandName(b.name)}</h3>
                       <p>{b.text}</p>
                     </div>
                     <ArrowUpRight size={24} />
@@ -548,8 +542,8 @@ export default function Storefront({
               </h2>
               <div>
                 <p>
-                  WM Studio Collective begon met Willemijn en Max. Met ideeën
-                  aan de ontwerptafel en de ambitie om iets eigens op te bouwen.
+                  Studio MW begon met Willemijn en Max. Met ideeën aan de
+                  ontwerptafel en de ambitie om iets eigens op te bouwen.
                 </p>
                 <p>
                   Verschillende kledinglijnen, één herkenbare visie. Dit is het
@@ -564,9 +558,7 @@ export default function Storefront({
       <footer>
         <div className="footer-top">
           <Link href="/" className="footer-wordmark">
-            WM STUDIO
-            <br />
-            COLLECTIVE
+            <BrandLogo />
             <span>
               Independent by design.
               <br />
@@ -600,7 +592,7 @@ export default function Storefront({
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} WM Studio Collective</span>
+          <span>© {new Date().getFullYear()} Studio MW</span>
           <span>NETHERLANDS · EUR € · NL</span>
           <span>WORK IN PROGRESS. ALWAYS MOVING.</span>
         </div>
@@ -657,7 +649,21 @@ export default function Storefront({
               </form>
             ) : panel === "menu" ? (
               <div className="mobile-links">
-                <Link href="/shop">Shop all</Link>
+                <Link href="/shop" onClick={() => setPanel(null)}>
+                  Shop all
+                </Link>
+                <button onClick={() => setPanel("search")}>Zoeken</button>
+                <button
+                  onClick={() => {
+                    setWishOnly(true);
+                    setPanel(null);
+                    document
+                      .getElementById("collection")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Favorieten
+                </button>
                 <button onClick={() => filterGender("Men")}>Men</button>
                 <button onClick={() => filterGender("Women")}>Women</button>
                 <a href="/#brands" onClick={() => setPanel(null)}>
@@ -714,6 +720,7 @@ export default function Storefront({
                         <span>{l.quantity}</span>
                         <button
                           aria-label="Meer"
+                          disabled={l.quantity >= Math.min(20, l.v.stock)}
                           onClick={() => update(l.sku, 1)}
                         >
                           <Plus size={12} />
@@ -860,29 +867,51 @@ export default function Storefront({
               <img src={selected.image} alt={selected.name} />
             </div>
             <div className="detail-copy">
-              <p className="eyebrow">{selected.brand} / THE FIRST EDITION</p>
+              <p className="eyebrow">
+                {brandName(selected.brand)} / THE FIRST EDITION
+              </p>
               <h2>{selected.name}</h2>
               <p className="detail-price">
                 {euro(selected.price)} <small>incl. btw</small>
               </p>
-              <p>{selected.description}</p>
+              <p>{brandText(selected.description)}</p>
               {saleable(selected, now || Date.now()) ? (
                 <>
-                  <p className="eyebrow">
-                    SELECT YOUR SIZE — {selected.variants[0]?.color}
-                  </p>
-                  <div className="sizes">
-                    {selected.variants.map((v) => (
-                      <button
-                        key={v.sku}
-                        disabled={!v.stock}
-                        className={size === v.sku ? "active" : ""}
-                        onClick={() => setSize(v.sku)}
+                  <p className="eyebrow">SELECT YOUR SIZE — {selectedColor}</p>
+                  {new Set(selected.variants.map((v) => v.color)).size > 1 && (
+                    <label>
+                      Kleur
+                      <select
+                        aria-label="Kleur"
+                        value={selectedColor}
+                        onChange={(e) => {
+                          setColor(e.target.value);
+                          setSize("");
+                          setMessage("");
+                        }}
                       >
-                        {v.size}
-                        {!v.stock && " ×"}
-                      </button>
-                    ))}
+                        {Array.from(
+                          new Set(selected.variants.map((v) => v.color)),
+                        ).map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <div className="sizes">
+                    {selected.variants
+                      .filter((v) => v.color === selectedColor)
+                      .map((v) => (
+                        <button
+                          key={v.sku}
+                          disabled={!v.stock}
+                          className={size === v.sku ? "active" : ""}
+                          onClick={() => setSize(v.sku)}
+                        >
+                          {v.size}
+                          {!v.stock && " ×"}
+                        </button>
+                      ))}
                   </div>
                   <button className="button dark full" onClick={add}>
                     Add to bag <Plus size={18} />

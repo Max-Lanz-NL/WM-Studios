@@ -8,8 +8,8 @@ export default async function Page({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const ps = visibleProducts();
+  const ps = await visibleProducts();
   const p = ps.find((p) => p.slug === slug);
   if (!p) notFound();
-  return <Storefront products={ps} content={home()} selectedId={p.id} />;
+  return <Storefront products={ps} content={await home()} selectedId={p.id} />;
 }

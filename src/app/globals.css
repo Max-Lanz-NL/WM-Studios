@@ -1109,6 +1109,10 @@ footer {
   color: #687454;
 }
 .profile strong {
+  max-width: 115px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: block;
   font-size: 10px;
   font-weight: 500;
@@ -1743,7 +1747,7 @@ td small {
   overflow: hidden;
 }
 .login-page aside:after {
-  content: "WM";
+  content: "MW";
   font-size: 420px;
   letter-spacing: -80px;
   font-weight: 800;
@@ -2441,5 +2445,90 @@ td small {
   *:after {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* Keep collection controls available at every screen size. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.collection-title {
+  font-size: clamp(27px, 3vw, 42px);
+  margin: 0;
+}
+.quantity button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+@media (max-width: 800px) {
+  .filters {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .tabs {
+    max-width: 100%;
+  }
+  .brand-select {
+    display: flex;
+  }
+}
+.product-badge:empty {
+  display: none;
+}
+
+/* Studio MW: sketch-inspired monogram, inherited ink for light and dark surfaces. */
+.brand-mark {
+  width: 90px;
+  height: 38px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linejoin: miter;
+}
+.wordmark > .brand-name {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+}
+.brand-name strong {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+.footer-wordmark .brand-mark {
+  display: block;
+  width: 150px;
+  height: 58px;
+  margin-bottom: 14px;
+}
+.footer-wordmark > .brand-name {
+  font-size: 13px;
+}
+.footer-wordmark .brand-name strong {
+  font-size: 24px;
+}
+.sidebar .brand-mark {
+  width: 78px;
+  height: 34px;
+}
+@media (max-width: 560px) {
+  .wordmark {
+    gap: 9px;
+  }
+  .brand-mark {
+    width: 77px;
+    height: 33px;
+  }
+  .wordmark > .brand-name {
+    font-size: 8px;
+    padding-left: 9px;
   }
 }

@@ -1,103 +1,92 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { z } from "zod";
-import {
-  equal,
-  sign,
-  isAdmin,
-  requireAdmin,
-  rateLimit,
-  sameOrigin,
-} from "@/lib/auth";
-import { db, saveProduct, orders, audit } from "@/lib/db";
+import { requireAdmin, currentStaff, rateLimit, sameOrigin } from "@/lib/auth";
+import { sessionClient } from "@/lib/supabase";
+import { saveProduct, staffAction } from "@/lib/db";
 import { productSchema } from "@/lib/model";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const b = await request.json();
+    const client = await sessionClient();
     if (b.action === "login") {
-      rateLimit("admin-login");
-      const password = process.env.ADMIN_PASSWORD;
-      if (!password || password.length < 12)
-        throw new Error("Configureer eerst een beheerwachtwoord (12+ tekens)");
-      if (
-        typeof b.password !== "string" ||
-        !equal(sign(b.password), sign(password))
-      )
+      const input = z
+        .object({
+          email: z.string().email().max(200),
+          password: z.string().min(8).max(200),
+        })
+        .parse(b);
+      await rateLimit("login:" + input.email.toLowerCase(), 8);
+      const { error } = await client.auth.signInWithPassword(input);
+      if (error)
         return NextResponse.json(
-          { error: "Onjuist wachtwoord" },
-          { status: 401 },
+          { error: "Inloggen mislukt. Controleer je gegevens." },
+          { status: 401, headers: { "Cache-Control": "private, no-store" } },
         );
-      const exp = String(Date.now() + 8 * 3600000);
-      (await cookies()).set("wm_admin", exp + "." + sign(exp), {
-        httpOnly: true,
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 28800,
-      });
-      return NextResponse.json({ ok: true });
-    }
-    await requireAdmin();
-    if (b.action === "logout") {
-      (await cookies()).delete("wm_admin");
-      return NextResponse.json({ ok: true });
-    }
-    if (b.action === "product")
+      if (!(await currentStaff())) {
+        await client.auth.signOut();
+        return NextResponse.json(
+          { error: "Dit account heeft geen actieve medewerkerstoegang." },
+          { status: 403 },
+        );
+      }
+    } else if (b.action === "logout") {
+      await client.auth.signOut();
+    } else if (b.action === "product") {
+      await requireAdmin("catalog.write");
       return NextResponse.json(
-        saveProduct(
+        await saveProduct(
           productSchema.parse(b.product),
           b.id ? z.string().uuid().parse(b.id) : undefined,
         ),
+        { headers: { "Cache-Control": "private, no-store" } },
       );
-    if (b.action === "order") {
-      const { id, status } = z
-        .object({
-          id: z.string().uuid(),
-          status: z.enum(["packed", "shipped"]),
-        })
-        .parse(b);
-      const o = orders().find((o) => o.id === id);
-      if (!o) throw new Error("Order niet gevonden");
-      if (
-        (status === "packed" && o.status !== "paid_demo") ||
-        (status === "shipped" && o.status !== "packed")
-      )
-        throw new Error("Ongeldige statusovergang");
-      o.status = status;
-      db()
-        .prepare("UPDATE orders SET body=? WHERE id=?")
-        .run(JSON.stringify(o), id);
-      audit(`${o.number}: ${status}`);
-      return NextResponse.json({ ok: true });
+    } else if (b.action === "order") {
+      await requireAdmin("orders.write");
+      await staffAction(
+        "order",
+        z
+          .object({
+            id: z.string().uuid(),
+            status: z.enum(["packed", "shipped"]),
+          })
+          .parse(b),
+      );
+    } else if (b.action === "home") {
+      await requireAdmin("content.write");
+      await staffAction(
+        "home",
+        z
+          .object({
+            headline: z.string().min(2).max(150),
+            subtitle: z.string().max(500),
+          })
+          .parse(b.content),
+      );
+    } else {
+      await requireAdmin();
+      throw new Error("Onbekende actie");
     }
-    if (b.action === "home") {
-      const content = z
-        .object({
-          headline: z.string().min(2).max(150),
-          subtitle: z.string().max(500),
-        })
-        .parse(b.content);
-      db()
-        .prepare("UPDATE settings SET body=? WHERE id=?")
-        .run(JSON.stringify(content), "home");
-      audit("Homepage gewijzigd");
-      return NextResponse.json({ ok: true });
-    }
-    throw new Error("Onbekende actie");
+    return NextResponse.json(
+      { ok: true },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (e) {
-    const unauthorized = e instanceof Error && e.message === "UNAUTHORIZED";
+    const message = e instanceof Error ? e.message : "Verzoek mislukt";
+    const status =
+      message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 400;
     return NextResponse.json(
       {
-        error: unauthorized
-          ? "Log eerst in"
-          : e instanceof z.ZodError
-            ? "Controleer de productgegevens"
-            : e instanceof Error
-              ? e.message
-              : "Verzoek mislukt",
+        error:
+          e instanceof z.ZodError
+            ? "Controleer de ingevulde gegevens"
+            : status === 401
+              ? "Log eerst in"
+              : status === 403
+                ? "Je hebt geen rechten voor deze actie"
+                : message,
       },
-      { status: unauthorized ? 401 : 400 },
+      { status, headers: { "Cache-Control": "private, no-store" } },
     );
   }
 }

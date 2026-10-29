@@ -1,8 +1,14 @@
 node_modules/
 .next/
+.next-test/
 .env*
 !.env.example
 data/
 test-results/
 playwright-report/
 *.tsbuildinfo
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+legacy-export*.json
+.vercel/

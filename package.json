@@ -1,7 +1,7 @@
 {
   "name": "wm-studios",
   "version": "1.0.0",
-  "description": "WM Studio Collective — premium fashion commerce workspace",
+  "description": "Studio MW — premium fashion commerce workspace",
   "main": "index.js",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
@@ -11,8 +11,19 @@
     "test": "vitest run",
     "setup": "node scripts/setup.mjs",
     "test:e2e": "playwright test",
-    "jobs": "node --env-file=.env.local --import tsx scripts/release-worker.ts",
-    "format": "prettier --write src scripts tests e2e *.ts *.json"
+    "format": "prettier --write src scripts tests e2e e2e-local *.ts *.json",
+    "db:export": "node scripts/export-sqlite.mjs",
+    "db:import": "node --env-file-if-exists=.env.local --import tsx scripts/import-legacy.ts",
+    "db:verify-export": "node --import tsx scripts/verify-legacy-export.ts",
+    "staff:grant": "node --env-file-if-exists=.env.local --import tsx scripts/grant-staff.ts",
+    "db:status": "node --env-file-if-exists=.env.local --import tsx scripts/maintenance.ts",
+    "test:postgres": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.postgres.config.ts",
+    "local:provision": "node --import tsx scripts/local-provision.ts",
+    "test:local": "playwright test --config playwright.local.config.ts",
+    "local:start": "node scripts/local-start.mjs",
+    "local:stop": "supabase stop --project-id wm-studio-local-staging",
+    "local:migrate": "supabase db push --local --yes",
+    "local:verify-import": "node --import tsx scripts/local-verify-import.ts"
   },
   "repository": {
     "type": "git",
@@ -27,6 +38,8 @@
   },
   "homepage": "https://github.com/Max-Lanz-NL/WM-Studios#readme",
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
     "lucide-react": "^1.61.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
@@ -34,14 +47,21 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
+    "@types/pg": "8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "pg": "8.23.1",
     "prettier": "^3.9.10",
+    "supabase": "2.122.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  }
 }

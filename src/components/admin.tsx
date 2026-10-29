@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo, { brandName, brandText } from "./brand-logo";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { Product, ProductInput, Order, euro, date } from "@/lib/model";
 import { useModal } from "./use-modal";
+import type { Staff } from "@/lib/auth";
 const statusLabels: Record<string, string> = {
   draft: "Concept",
   review: "Wacht op controle",
@@ -31,6 +33,10 @@ const statusLabels: Record<string, string> = {
   paid_demo: "Betaald (demo)",
   packed: "Ingepakt",
   shipped: "Verzonden (demo)",
+  pending_payment: "Wacht op betaling",
+  paid: "Betaald",
+  cancelled: "Geannuleerd",
+  expired: "Verlopen",
 };
 const fresh: ProductInput = {
   name: "",
@@ -56,12 +62,14 @@ export default function Admin({
   orders,
   content,
   waitlist,
+  staff,
 }: {
   authorized: boolean;
   products: Product[];
   orders: Order[];
   content: { headline: string; subtitle: string };
   waitlist: number;
+  staff: Staff | null;
 }) {
   const router = useRouter(),
     [tab, setTab] = useState("Overzicht"),
@@ -74,7 +82,10 @@ export default function Admin({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [mobile, setMobile] = useState(false),
-    [home, setHome] = useState(content);
+    [home, setHome] = useState({
+      headline: brandText(content.headline),
+      subtitle: brandText(content.subtitle),
+    });
   useModal(Boolean(editor || selectedOrder), () => {
     setEditor(null);
     setSelectedOrder(null);
@@ -104,12 +115,7 @@ export default function Admin({
       <main className="login-page">
         <div>
           <Link href="/" className="wordmark">
-            <b className="monogram">WM</b>
-            <span>
-              STUDIO
-              <br />
-              COLLECTIVE
-            </span>
+            <BrandLogo />
           </Link>
           <p className="eyebrow">THE STUDIO / PRIVATE ACCESS</p>
           <h1>
@@ -120,17 +126,30 @@ export default function Admin({
           <p>De werkruimte voor alles wat je maakt, lanceert en verkoopt.</p>
           <form
             action={async (f) => {
-              await send({ action: "login", password: f.get("password") });
+              await send({
+                action: "login",
+                email: f.get("email"),
+                password: f.get("password"),
+              });
             }}
           >
             <label>
-              Beheerwachtwoord
+              E-mailadres
+              <input
+                name="email"
+                type="email"
+                required
+                autoComplete="username"
+              />
+            </label>
+            <label>
+              Wachtwoord
               <input
                 name="password"
                 type="password"
                 required
                 autoComplete="current-password"
-                minLength={12}
+                minLength={8}
               />
             </label>
             <button className="button dark full" disabled={busy}>
@@ -142,7 +161,7 @@ export default function Admin({
               {message}
             </p>
           )}
-          <span className="demo-pill">LOKALE DEMO · BEVEILIGDE TOEGANG</span>
+          <span className="demo-pill">SUPABASE AUTH · TEST / STAGING</span>
         </div>
         <aside>
           <span>
@@ -150,7 +169,7 @@ export default function Admin({
             <br />
             BY DESIGN.
           </span>
-          <small>WM STUDIO COLLECTIVE — VOL. 01</small>
+          <small>STUDIO MW — VOL. 01</small>
         </aside>
       </main>
     );
@@ -161,7 +180,9 @@ export default function Admin({
         .map((v) => ({ ...v, name: p.name })),
     ),
     releases = products.filter((p) => p.status === "scheduled"),
-    pending = orders.filter((o) => o.status === "paid_demo");
+    pending = orders.filter(
+      (o) => o.status === "paid_demo" || o.status === "paid",
+    );
   const nav = [
     { name: "Overzicht", icon: LayoutDashboard },
     { name: "Producten", icon: Package },
@@ -207,28 +228,33 @@ export default function Admin({
     <div className="admin-shell">
       <aside className={"sidebar " + (mobile ? "sidebar-open" : "")}>
         <Link href="/" className="wordmark">
-          <b className="monogram">WM</b>
-          <span>
-            STUDIO
-            <br />
-            COLLECTIVE
-          </span>
+          <BrandLogo />
         </Link>
         <p className="sidebar-caption">YOUR WORKSPACE</p>
         <nav>
-          {nav.map((n) => (
-            <button
-              className={tab === n.name ? "selected" : ""}
-              key={n.name}
-              onClick={() => go(n.name)}
-            >
-              <n.icon size={18} />
-              {n.name}
-              {n.name === "Bestellingen" && pending.length > 0 && (
-                <small>{pending.length}</small>
-              )}
-            </button>
-          ))}
+          {nav
+            .filter((n) =>
+              n.name === "Bestellingen"
+                ? staff?.permissions.includes("orders.read")
+                : ["Producten", "Releases", "Voorraad"].includes(n.name)
+                  ? staff?.permissions.includes("catalog.write")
+                  : n.name === "Website"
+                    ? staff?.permissions.includes("content.write")
+                    : true,
+            )
+            .map((n) => (
+              <button
+                className={tab === n.name ? "selected" : ""}
+                key={n.name}
+                onClick={() => go(n.name)}
+              >
+                <n.icon size={18} />
+                {n.name}
+                {n.name === "Bestellingen" && pending.length > 0 && (
+                  <small>{pending.length}</small>
+                )}
+              </button>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <Link href="/" target="_blank">
@@ -236,10 +262,10 @@ export default function Admin({
           </Link>
           <span className="demo-pill">DEMO ENVIRONMENT</span>
           <div className="profile">
-            <b>WM</b>
+            <b>MW</b>
             <div>
-              <strong>The founders</strong>
-              <span>Beheerder · lokale demo</span>
+              <strong>{staff?.email}</strong>
+              <span>{staff?.role} · test / staging</span>
             </div>
             <button
               aria-label="Uitloggen"
@@ -265,7 +291,7 @@ export default function Admin({
             <strong>{tab}</strong>
           </div>
           <span className="admin-date">
-            WM STUDIO COLLECTIVE <i /> STUDIO NO. 01
+            STUDIO MW <i /> STUDIO NO. 01
           </span>
         </header>
         <div className="demo-banner">
@@ -292,14 +318,15 @@ export default function Admin({
                       : "Alles op één plek. Klaar voor de volgende stap."}
               </p>
             </div>
-            {["Overzicht", "Producten", "Releases"].includes(tab) && (
-              <button
-                className="button dark"
-                onClick={() => setEditor(structuredClone(fresh))}
-              >
-                <Plus size={16} /> Nieuw product
-              </button>
-            )}
+            {staff?.permissions.includes("catalog.write") &&
+              ["Overzicht", "Producten", "Releases"].includes(tab) && (
+                <button
+                  className="button dark"
+                  onClick={() => setEditor(structuredClone(fresh))}
+                >
+                  <Plus size={16} /> Nieuw product
+                </button>
+              )}
           </div>
           {message && (
             <p className="notice" role="status">
@@ -452,7 +479,7 @@ export default function Admin({
                     <div className="release-row" key={p.id}>
                       <img src={p.image} alt={p.name} />
                       <div>
-                        <p className="eyebrow">{p.brand}</p>
+                        <p className="eyebrow">{brandName(p.brand)}</p>
                         <h3>{p.name}</h3>
                         <span>
                           {p.releaseAt && date(p.releaseAt)} · Amsterdam
@@ -526,7 +553,7 @@ export default function Admin({
                             </div>
                           </div>
                         </td>
-                        <td>{p.brand}</td>
+                        <td>{brandName(p.brand)}</td>
                         <td>
                           <span className={"badge " + p.status}>
                             {statusLabels[p.status]}
@@ -553,15 +580,15 @@ export default function Admin({
             <>
               <div className="release-notice">
                 Verkoop wordt altijd server-side tegen de releasedatum
-                gecontroleerd. Start de lokale releaseworker met npm run jobs
-                voor achtergrondpublicatie. Automatische e-mails zijn nog niet
+                gecontroleerd. Supabase Cron publiceert releases en ruimt
+                verlopen reserveringen op. Automatische e-mails zijn nog niet
                 aangesloten.
               </div>
               <div className="release-cards">
                 {releases.map((p) => (
                   <article className="admin-card release-card" key={p.id}>
                     <img src={p.image} alt={p.name} />
-                    <p className="eyebrow">{p.brand}</p>
+                    <p className="eyebrow">{brandName(p.brand)}</p>
                     <h2>{p.name}</h2>
                     <p>{p.releaseAt && date(p.releaseAt)}</p>
                     <span className="badge">Europe/Amsterdam</span>
@@ -671,8 +698,9 @@ export default function Admin({
                 <div>
                   <h2>Voorraad per variant</h2>
                   <p>
-                    Aanpassingen via de producteditor. Voorraadmutatiehistorie
-                    volgt in de volgende fase.
+                    Aanpassingen via de producteditor. Mutaties worden centraal
+                    bijgehouden; dit scherm toont de beschikbare voorraad na
+                    reserveringen.
                   </p>
                 </div>
               </div>
@@ -773,18 +801,19 @@ export default function Admin({
               </div>
               {[
                 {
-                  name: "Lokale SQLite-database",
-                  text: "Actief · Producten, varianten, orders, wachtlijsten, auditlog en homepage.",
+                  name: "Supabase PostgreSQL",
+                  text: "Centrale producten, varianten, voorraad, klanten, orders, releases en mutatiehistorie met RLS.",
                   active: true,
                 },
                 {
                   name: "Beheerbeveiliging",
-                  text: "Actief · Servercontrole, ondertekende sessie, HTTP-only cookie, rate limiting.",
+                  text: "Persoonlijke Supabase Auth-sessies, HTTP-only cookies en server- en databaserechten.",
                   active: true,
                 },
                 {
-                  name: "Supabase & rollen",
-                  text: "Nog niet aangesloten · PostgreSQL, Auth, RLS, Storage en afzonderlijke medewerkersaccounts.",
+                  name: "Medewerkers & rollen",
+                  text: "Owner, admin, designer, warehouse en support. Toegang wordt bij elk verzoek gecontroleerd.",
+                  active: true,
                 },
                 {
                   name: "Mollie",
@@ -795,12 +824,12 @@ export default function Admin({
                   text: "Nog niet aangesloten · Geen labels, tracking of printercommunicatie.",
                 },
                 {
-                  name: "Resend & productietaken",
-                  text: "Lokale releaseworker beschikbaar. Beheerde productietaken en e-mail zijn nog niet aangesloten.",
+                  name: "Supabase Cron & e-mail",
+                  text: "Databaseplanning via migratie. Controleer de Cron-status in staging; e-mail is nog niet aangesloten.",
                 },
                 {
                   name: "Productiehosting",
-                  text: "Geblokkeerd voor deze versie · De lokale database is niet geschikt voor Vercel.",
+                  text: "Alleen local/staging-configuratie toegestaan. Productie staat expliciet uit.",
                 },
               ].map((x) => (
                 <div className="integration" key={x.name}>
@@ -819,7 +848,7 @@ export default function Admin({
             </section>
           )}
           <div className="admin-foot">
-            <span>WM STUDIO COLLECTIVE · THE WORKSPACE</span>
+            <span>STUDIO MW · THE WORKSPACE</span>
             <span>Made for what comes next.</span>
           </div>
         </main>
@@ -903,7 +932,9 @@ export default function Admin({
                     }
                   >
                     {["WM STUDIO", "FORM", "OFF HOURS"].map((x) => (
-                      <option key={x}>{x}</option>
+                      <option key={x} value={x}>
+                        {brandName(x)}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -1149,13 +1180,13 @@ export default function Admin({
               </p>
             </div>
             <span className="badge">{statusLabels[selectedOrder.status]}</span>
-            {selectedOrder.status !== "shipped" && (
+            {["paid_demo", "paid", "packed"].includes(selectedOrder.status) && (
               <button
                 className="button dark full"
                 disabled={busy}
                 onClick={async () => {
                   const next =
-                    selectedOrder.status === "paid_demo" ? "packed" : "shipped";
+                    selectedOrder.status === "packed" ? "shipped" : "packed";
                   if (
                     await send({
                       action: "order",
@@ -1166,7 +1197,7 @@ export default function Admin({
                     setSelectedOrder({ ...selectedOrder, status: next });
                 }}
               >
-                {selectedOrder.status === "paid_demo"
+                {selectedOrder.status !== "packed"
                   ? "Markeer als ingepakt"
                   : "Markeer als verzonden (demo)"}{" "}
                 <ArrowRight size={16} />
