@@ -1,5 +1,5 @@
 "use client";
-import BrandLogo, { brandName } from "./brand-logo";
+import BrandLogo, { brandName, brandText } from "./brand-logo";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -290,8 +290,8 @@ export default function Storefront({
               </div>
               <div className="hero-copy">
                 <p className="eyebrow">A NEW PERSPECTIVE ON EVERYDAY WEAR</p>
-                <h1>{content.headline}</h1>
-                <p>{content.subtitle}</p>
+                <h1>{brandText(content.headline)}</h1>
+                <p>{brandText(content.subtitle)}</p>
                 <a className="button light" href="#collection">
                   Discover the collection <ArrowUpRight size={18} />
                 </a>
@@ -874,7 +874,7 @@ export default function Storefront({
               <p className="detail-price">
                 {euro(selected.price)} <small>incl. btw</small>
               </p>
-              <p>{selected.description}</p>
+              <p>{brandText(selected.description)}</p>
               {saleable(selected, now || Date.now()) ? (
                 <>
                   <p className="eyebrow">SELECT YOUR SIZE — {selectedColor}</p>

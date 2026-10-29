@@ -111,6 +111,8 @@ test("kleurkeuze en voorraad begrenzen de winkelmand voor checkout", async ({
 test("Studio MW branding is consistent across store and admin", async ({
   page,
 }) => {
+  await page.goto("/");
+  await expect(page.locator("body")).not.toContainText("WM Studio Collective");
   await page.goto("/shop");
   await expect(page).toHaveTitle("De collectie | Studio MW");
   await expect(

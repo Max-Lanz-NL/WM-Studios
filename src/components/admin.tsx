@@ -1,5 +1,5 @@
 "use client";
-import BrandLogo, { brandName } from "./brand-logo";
+import BrandLogo, { brandName, brandText } from "./brand-logo";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -82,7 +82,10 @@ export default function Admin({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [mobile, setMobile] = useState(false),
-    [home, setHome] = useState(content);
+    [home, setHome] = useState({
+      headline: brandText(content.headline),
+      subtitle: brandText(content.subtitle),
+    });
   useModal(Boolean(editor || selectedOrder), () => {
     setEditor(null);
     setSelectedOrder(null);

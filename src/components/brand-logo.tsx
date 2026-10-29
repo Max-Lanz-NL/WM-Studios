@@ -25,3 +25,9 @@ export default function BrandLogo() {
 export function brandName(value: string) {
   return value === "WM STUDIO" ? "STUDIO MW" : value;
 }
+
+export function brandText(value: string) {
+  return value
+    .replace(/WM Studio Collective/gi, "Studio MW")
+    .replace(/WM STUDIO/g, "STUDIO MW");
+}
