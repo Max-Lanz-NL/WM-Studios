@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo, { brandName } from "./brand-logo";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -224,17 +225,8 @@ export default function Storefront({
         </span>
       </div>
       <header className="store-header" data-ready={ready}>
-        <Link
-          href="/"
-          className="wordmark"
-          aria-label="WM Studio Collective home"
-        >
-          <b className="monogram">WM</b>
-          <span>
-            STUDIO
-            <br />
-            COLLECTIVE
-          </span>
+        <Link href="/" className="wordmark" aria-label="Studio MW home">
+          <BrandLogo />
         </Link>
         <nav aria-label="Hoofdnavigatie">
           <Link href="/shop">Shop all</Link>
@@ -293,7 +285,7 @@ export default function Storefront({
               />
               <div className="hero-shade" />
               <div className="hero-top">
-                <span>WM STUDIO COLLECTIVE</span>
+                <span>STUDIO MW</span>
                 <span>THE FIRST EDITION — VOL. 01</span>
               </div>
               <div className="hero-copy">
@@ -367,7 +359,9 @@ export default function Storefront({
                 onChange={(e) => setBrand(e.target.value)}
               >
                 {["All", "WM STUDIO", "FORM", "OFF HOURS"].map((b) => (
-                  <option key={b}>{b}</option>
+                  <option key={b} value={b}>
+                    {brandName(b)}
+                  </option>
                 ))}
               </select>
             </label>
@@ -381,7 +375,7 @@ export default function Storefront({
               {query && `Zoeken: ${query} · `}
               {gender !== "All" && `${gender} · `}
               {category !== "All" && `${category} · `}
-              {brand !== "All" && `${brand} · `}
+              {brand !== "All" && `${brandName(brand)} · `}
               {list.length} items{" "}
               <button
                 onClick={() => {
@@ -428,7 +422,7 @@ export default function Storefront({
                 </div>
                 <div className="product-meta">
                   <div>
-                    <p>{p.brand}</p>
+                    <p>{brandName(p.brand)}</p>
                     <h3>
                       <Link href={"/products/" + p.slug}>{p.name}</Link>
                     </h3>
@@ -496,10 +490,10 @@ export default function Storefront({
                     <img
                       loading="lazy"
                       src={`https://images.unsplash.com/${b.img}?auto=format&fit=crop&w=900&q=85`}
-                      alt={`Editorial voor ${b.name}`}
+                      alt={`Editorial voor ${brandName(b.name)}`}
                     />
                     <div>
-                      <h3>{b.name}</h3>
+                      <h3>{brandName(b.name)}</h3>
                       <p>{b.text}</p>
                     </div>
                     <ArrowUpRight size={24} />
@@ -548,8 +542,8 @@ export default function Storefront({
               </h2>
               <div>
                 <p>
-                  WM Studio Collective begon met Willemijn en Max. Met ideeën
-                  aan de ontwerptafel en de ambitie om iets eigens op te bouwen.
+                  Studio MW begon met Willemijn en Max. Met ideeën aan de
+                  ontwerptafel en de ambitie om iets eigens op te bouwen.
                 </p>
                 <p>
                   Verschillende kledinglijnen, één herkenbare visie. Dit is het
@@ -564,9 +558,7 @@ export default function Storefront({
       <footer>
         <div className="footer-top">
           <Link href="/" className="footer-wordmark">
-            WM STUDIO
-            <br />
-            COLLECTIVE
+            <BrandLogo />
             <span>
               Independent by design.
               <br />
@@ -600,7 +592,7 @@ export default function Storefront({
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} WM Studio Collective</span>
+          <span>© {new Date().getFullYear()} Studio MW</span>
           <span>NETHERLANDS · EUR € · NL</span>
           <span>WORK IN PROGRESS. ALWAYS MOVING.</span>
         </div>
@@ -875,7 +867,9 @@ export default function Storefront({
               <img src={selected.image} alt={selected.name} />
             </div>
             <div className="detail-copy">
-              <p className="eyebrow">{selected.brand} / THE FIRST EDITION</p>
+              <p className="eyebrow">
+                {brandName(selected.brand)} / THE FIRST EDITION
+              </p>
               <h2>{selected.name}</h2>
               <p className="detail-price">
                 {euro(selected.price)} <small>incl. btw</small>

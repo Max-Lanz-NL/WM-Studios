@@ -1,9 +1,10 @@
+import BrandLogo from "@/components/brand-logo";
 import Link from "next/link";
 export default function ConfigurationNeeded() {
   return (
     <main className="info-page">
       <Link className="wordmark" href="/">
-        WM STUDIO COLLECTIVE
+        <BrandLogo />
       </Link>
       <p className="eyebrow">STAGING / CONFIGURATIE</p>
       <h1>De studio wordt verbonden.</h1>

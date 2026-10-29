@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo, { brandName } from "./brand-logo";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -111,12 +112,7 @@ export default function Admin({
       <main className="login-page">
         <div>
           <Link href="/" className="wordmark">
-            <b className="monogram">WM</b>
-            <span>
-              STUDIO
-              <br />
-              COLLECTIVE
-            </span>
+            <BrandLogo />
           </Link>
           <p className="eyebrow">THE STUDIO / PRIVATE ACCESS</p>
           <h1>
@@ -170,7 +166,7 @@ export default function Admin({
             <br />
             BY DESIGN.
           </span>
-          <small>WM STUDIO COLLECTIVE — VOL. 01</small>
+          <small>STUDIO MW — VOL. 01</small>
         </aside>
       </main>
     );
@@ -229,12 +225,7 @@ export default function Admin({
     <div className="admin-shell">
       <aside className={"sidebar " + (mobile ? "sidebar-open" : "")}>
         <Link href="/" className="wordmark">
-          <b className="monogram">WM</b>
-          <span>
-            STUDIO
-            <br />
-            COLLECTIVE
-          </span>
+          <BrandLogo />
         </Link>
         <p className="sidebar-caption">YOUR WORKSPACE</p>
         <nav>
@@ -268,7 +259,7 @@ export default function Admin({
           </Link>
           <span className="demo-pill">DEMO ENVIRONMENT</span>
           <div className="profile">
-            <b>WM</b>
+            <b>MW</b>
             <div>
               <strong>{staff?.email}</strong>
               <span>{staff?.role} · test / staging</span>
@@ -297,7 +288,7 @@ export default function Admin({
             <strong>{tab}</strong>
           </div>
           <span className="admin-date">
-            WM STUDIO COLLECTIVE <i /> STUDIO NO. 01
+            STUDIO MW <i /> STUDIO NO. 01
           </span>
         </header>
         <div className="demo-banner">
@@ -485,7 +476,7 @@ export default function Admin({
                     <div className="release-row" key={p.id}>
                       <img src={p.image} alt={p.name} />
                       <div>
-                        <p className="eyebrow">{p.brand}</p>
+                        <p className="eyebrow">{brandName(p.brand)}</p>
                         <h3>{p.name}</h3>
                         <span>
                           {p.releaseAt && date(p.releaseAt)} · Amsterdam
@@ -559,7 +550,7 @@ export default function Admin({
                             </div>
                           </div>
                         </td>
-                        <td>{p.brand}</td>
+                        <td>{brandName(p.brand)}</td>
                         <td>
                           <span className={"badge " + p.status}>
                             {statusLabels[p.status]}
@@ -594,7 +585,7 @@ export default function Admin({
                 {releases.map((p) => (
                   <article className="admin-card release-card" key={p.id}>
                     <img src={p.image} alt={p.name} />
-                    <p className="eyebrow">{p.brand}</p>
+                    <p className="eyebrow">{brandName(p.brand)}</p>
                     <h2>{p.name}</h2>
                     <p>{p.releaseAt && date(p.releaseAt)}</p>
                     <span className="badge">Europe/Amsterdam</span>
@@ -854,7 +845,7 @@ export default function Admin({
             </section>
           )}
           <div className="admin-foot">
-            <span>WM STUDIO COLLECTIVE · THE WORKSPACE</span>
+            <span>STUDIO MW · THE WORKSPACE</span>
             <span>Made for what comes next.</span>
           </div>
         </main>
@@ -938,7 +929,9 @@ export default function Admin({
                     }
                   >
                     {["WM STUDIO", "FORM", "OFF HOURS"].map((x) => (
-                      <option key={x}>{x}</option>
+                      <option key={x} value={x}>
+                        {brandName(x)}
+                      </option>
                     ))}
                   </select>
                 </label>

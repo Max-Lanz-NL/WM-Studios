@@ -1,3 +1,4 @@
+import BrandLogo from "@/components/brand-logo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 const pages: Record<string, { title: string; text: string }> = {
@@ -7,11 +8,11 @@ const pages: Record<string, { title: string; text: string }> = {
   },
   contact: {
     title: "Contact",
-    text: "WM Studio Collective wordt opgericht door Willemijn en Max. Het zakelijke contactadres, KvK-nummer, btw-nummer en vestigingsadres zijn nog niet aangeleverd. Deze gegevens worden vóór livegang toegevoegd.",
+    text: "Studio MW wordt opgericht door Willemijn en Max. Het zakelijke contactadres, KvK-nummer, btw-nummer en vestigingsadres zijn nog niet aangeleverd. Deze gegevens worden vóór livegang toegevoegd.",
   },
   privacy: {
     title: "Privacy & cookies — concept",
-    text: "Deze demo bewaart je winkelmand en favorieten lokaal in je browser. Een strikt noodzakelijke cookie beveiligt de beheersessie. Er worden geen marketingcookies geplaatst. Productafbeeldingen worden van Unsplash geladen; daarbij maakt je browser verbinding met die externe dienst. Testorders en wachtlijsten worden centraal opgeslagen in de Supabase-database van WM Studio Collective. Vercel verzorgt de hosting van deze testversie. Gebruik fictieve gegevens. Een definitieve privacyverklaring met bewaartermijnen en contactgegevens moet vóór livegang worden opgesteld.",
+    text: "Deze demo bewaart je winkelmand en favorieten lokaal in je browser. Een strikt noodzakelijke cookie beveiligt de beheersessie. Er worden geen marketingcookies geplaatst. Productafbeeldingen worden van Unsplash geladen; daarbij maakt je browser verbinding met die externe dienst. Testorders en wachtlijsten worden centraal opgeslagen in de Supabase-database van Studio MW. Vercel verzorgt de hosting van deze testversie. Gebruik fictieve gegevens. Een definitieve privacyverklaring met bewaartermijnen en contactgegevens moet vóór livegang worden opgesteld.",
   },
   terms: {
     title: "Algemene voorwaarden — concept",
@@ -36,7 +37,7 @@ export default async function Info({
   return (
     <main className="info-page">
       <Link className="wordmark" href="/">
-        WM STUDIO COLLECTIVE
+        <BrandLogo />
       </Link>
       <p className="eyebrow">CLIENT SERVICES / CONCEPT</p>
       <h1>{p.title}</h1>

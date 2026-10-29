@@ -1,7 +1,7 @@
 {
   "name": "wm-studios",
   "version": "1.0.0",
-  "description": "WM Studio Collective — premium fashion commerce workspace",
+  "description": "Studio MW — premium fashion commerce workspace",
   "main": "index.js",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",

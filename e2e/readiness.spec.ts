@@ -107,3 +107,24 @@ test("kleurkeuze en voorraad begrenzen de winkelmand voor checkout", async ({
     page.getByRole("button", { name: "Meer", exact: true }),
   ).toBeDisabled();
 });
+
+test("Studio MW branding is consistent across store and admin", async ({
+  page,
+}) => {
+  await page.goto("/shop");
+  await expect(page).toHaveTitle("De collectie | Studio MW");
+  await expect(
+    page.getByRole("link", { name: "Studio MW home", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".store-header .brand-mark")).toBeVisible();
+  await expect(page.getByText("WM STUDIO", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Filter kledinglijn")).toContainText(
+    "STUDIO MW",
+  );
+  await page.goto("/info/contact");
+  await expect(page.locator("main")).toContainText("Studio MW wordt opgericht");
+  await expect(page.locator(".brand-mark")).toBeVisible();
+  await page.goto("/admin");
+  await expect(page.locator(".brand-mark")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("WM STUDIO COLLECTIVE");
+});

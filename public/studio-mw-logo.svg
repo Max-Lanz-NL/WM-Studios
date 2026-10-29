@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 290" role="img" aria-labelledby="title">
+  <title id="title">Studio MW — angular ribbon monogram</title>
+  <g transform="translate(20 10) scale(2)" fill="none" stroke="#22251f" stroke-width="3.2" stroke-linejoin="miter">
+    <path d="M8 92 48 14H73L94 43 112 14H137L188 92H157L124 43 105 71H83L59 42 34 92Z"/>
+    <path d="M137 14H164L202 76 219 56H237L251 75 282 10H308L268 92H242L229 77 215 92H190Z"/>
+    <path d="m48 14 25 39 21-10M112 14l12 29M282 10l-16 35"/>
+  </g>
+  <text x="330" y="260" text-anchor="middle" fill="#22251f" font-family="Arial,sans-serif" font-size="30" letter-spacing="10">STUDIO MW</text>
+</svg>

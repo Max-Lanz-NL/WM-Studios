@@ -1,4 +1,4 @@
-# WM Studio Collective
+# Studio MW
 
 Next.js App Router, React en strict TypeScript, met **Supabase PostgreSQL als enige applicatiedatabase**. De bestaande webshop en beheerwerkruimte zijn behouden. Persoonlijke Supabase Auth-accounts vervangen de gedeelde demo-login. Deze branch ondersteunt uitsluitend **local en staging**; echte betalingen, verzending en productie zijn niet ingeschakeld.
 
