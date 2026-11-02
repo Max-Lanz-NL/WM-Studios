@@ -594,7 +594,7 @@ export default function Storefront({
         </div>
         <div className="footer-bottom">
           <span>© {new Date().getFullYear()} Studio MW</span>
-          <span>NETHERLANDS · EUR € · NL</span>
+          <span>NETHERLANDS · EUR € · EN</span>
           <span>WORK IN PROGRESS. ALWAYS MOVING.</span>
         </div>
       </footer>
