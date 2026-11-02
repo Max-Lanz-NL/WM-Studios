@@ -100,6 +100,9 @@ export default function Storefront({
       p.name.toLowerCase().includes(query.toLowerCase()) &&
       (!wishOnly || wish.includes(p.id)),
   );
+  const upcomingProducts = products.filter(
+    (p) => !saleable(p, now || Date.now()),
+  );
   const selectedColor = color || selected?.variants[0]?.color || "";
   function open(p: Product) {
     setSelected(p);
@@ -127,6 +130,7 @@ export default function Storefront({
         : [...prev, { productId: selected.id, sku: size, quantity: 1 }],
     );
     setKey(crypto.randomUUID());
+    setMessage("");
     setSelected(null);
     setPanel("bag");
     setCheckout(false);
@@ -302,22 +306,6 @@ export default function Storefront({
               </div>
               <span className="hero-index">01 / THE COLLECTIVE</span>
             </section>
-            <section className="manifesto">
-              <p className="eyebrow">DIFFERENT EXPRESSIONS. ONE COLLECTIVE.</p>
-              <h2>
-                For the way you move.
-                <br />
-                <span>For who you are becoming.</span>
-              </h2>
-              <p>
-                A wardrobe that moves with you. Independent clothing lines,
-                connected by one vision: considered designs with a character of
-                their own.
-              </p>
-              <a href="#story">
-                Meet the collective <ArrowUpRight size={16} />
-              </a>
-            </section>
           </>
         )}
         <section className="collection section" id="collection">
@@ -434,8 +422,14 @@ export default function Storefront({
                 </div>
                 <div className="swatches">
                   <span>
-                    {new Set(p.variants.map((v) => v.color)).size} colour(s) ·{" "}
-                    {new Set(p.variants.map((v) => v.size)).size} sizes
+                    {new Set(p.variants.map((v) => v.color)).size}{" "}
+                    {new Set(p.variants.map((v) => v.color)).size === 1
+                      ? "colour"
+                      : "colours"}{" "}
+                    · {new Set(p.variants.map((v) => v.size)).size}{" "}
+                    {new Set(p.variants.map((v) => v.size)).size === 1
+                      ? "size"
+                      : "sizes"}
                   </span>
                 </div>
               </article>
@@ -447,6 +441,22 @@ export default function Storefront({
         </section>
         {!shopOnly && (
           <>
+            <section className="manifesto">
+              <p className="eyebrow">DIFFERENT EXPRESSIONS. ONE COLLECTIVE.</p>
+              <h2>
+                For the way you move.
+                <br />
+                <span>For who you are becoming.</span>
+              </h2>
+              <p>
+                A wardrobe that moves with you. Independent clothing lines,
+                connected by one vision: considered designs with a character of
+                their own.
+              </p>
+              <a href="#story">
+                Meet the collective <ArrowUpRight size={16} />
+              </a>
+            </section>
             <section className="brand-section section" id="brands">
               <div className="section-heading">
                 <div>
@@ -501,22 +511,21 @@ export default function Storefront({
                 ))}
               </div>
             </section>
-            <section className="drop-section section">
-              <div>
-                <p className="eyebrow">ON THE HORIZON</p>
-                <h2>
-                  Good things
-                  <br />
-                  take their time.
-                </h2>
-                <p>
-                  A new expression. A new chapter.
-                  <br />
-                  Discover what is next for the collective.
-                </p>
-                {products
-                  .filter((p) => !saleable(p, now || Date.now()))
-                  .map((p) => (
+            {upcomingProducts.length > 0 && (
+              <section className="drop-section section">
+                <div>
+                  <p className="eyebrow">ON THE HORIZON</p>
+                  <h2>
+                    Good things
+                    <br />
+                    take their time.
+                  </h2>
+                  <p>
+                    A new expression. A new chapter.
+                    <br />
+                    Discover what is next for the collective.
+                  </p>
+                  {upcomingProducts.map((p) => (
                     <button
                       className="button dark"
                       key={p.id}
@@ -525,14 +534,15 @@ export default function Storefront({
                       Discover {p.name} <ArrowUpRight size={17} />
                     </button>
                   ))}
-              </div>
-              <div className="drop-type">
-                OFF
-                <br />
-                <span>HOURS</span>
-                <small>THE NEXT CHAPTER / COMING SOON</small>
-              </div>
-            </section>
+                </div>
+                <div className="drop-type">
+                  OFF
+                  <br />
+                  <span>HOURS</span>
+                  <small>THE NEXT CHAPTER / COMING SOON</small>
+                </div>
+              </section>
+            )}
             <section className="story section" id="story">
               <p className="eyebrow">INDEPENDENT BY DESIGN</p>
               <h2>
@@ -908,7 +918,10 @@ export default function Storefront({
                           key={v.sku}
                           disabled={!v.stock}
                           className={size === v.sku ? "active" : ""}
-                          onClick={() => setSize(v.sku)}
+                          onClick={() => {
+                            setSize(v.sku);
+                            setMessage("");
+                          }}
                         >
                           {v.size}
                           {!v.stock && " ×"}

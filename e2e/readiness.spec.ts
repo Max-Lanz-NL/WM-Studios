@@ -169,3 +169,99 @@ test("store forms, information pages and login errors use English", async ({
     "Sign-in failed. Check your details.",
   );
 });
+
+test("size feedback clears after success and bag controls are easy to tap", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/products/the-essential-tee");
+  await page.getByRole("button", { name: "Add to bag" }).click();
+  await expect(
+    page.getByText("Please select your size first.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "M", exact: true }).click();
+  await page.getByRole("button", { name: "Add to bag" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Shopping bag" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Please select your size first.", { exact: true }),
+  ).toHaveCount(0);
+  for (const name of ["Decrease quantity", "Increase quantity"]) {
+    const box = await page
+      .getByRole("button", { name, exact: true })
+      .boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("products come before the brand story and empty upcoming releases disappear", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  expect(
+    await page
+      .locator("#collection")
+      .evaluate(
+        (el) =>
+          !!(
+            el.compareDocumentPosition(document.querySelector(".manifesto")!) &
+            Node.DOCUMENT_POSITION_FOLLOWING
+          ),
+      ),
+  ).toBe(true);
+  await expect(page.locator(".drop-section")).toBeVisible();
+  const catalog = await request.get(
+    "http://127.0.0.1:54329/rest/v1/catalog?select=body",
+  );
+  const rows = await catalog.json();
+  const original = rows.find(
+    (r: { body: { slug: string } }) => r.body.slug === "off-duty-hoodie",
+  ).body;
+  const origin = "http://127.0.0.1:3001";
+  const login = await request.post("/api/admin", {
+    headers: { origin },
+    data: {
+      action: "login",
+      email: "e2e-owner@example.invalid",
+      password: "local-e2e-test-password-only",
+    },
+  });
+  expect(login.ok()).toBe(true);
+  const publish = await request.post("/api/admin", {
+    headers: { origin },
+    data: {
+      action: "product",
+      id: original.id,
+      product: { ...original, status: "published", releaseAt: null },
+    },
+  });
+  expect(publish.ok()).toBe(true);
+  const published = await publish.json();
+  try {
+    await page.reload();
+    await expect(page.locator(".drop-section")).toHaveCount(0);
+    await expect(page.locator(".product-grid")).not.toContainText("colour(s)");
+  } finally {
+    const restore = await request.post("/api/admin", {
+      headers: { origin },
+      data: {
+        action: "product",
+        id: original.id,
+        product: {
+          ...original,
+          releaseAt: new Date(original.releaseAt).toISOString(),
+          version: published.version,
+        },
+      },
+    });
+    expect(restore.ok()).toBe(true);
+  }
+});
