@@ -6,12 +6,12 @@ export const metadata: Metadata = {
     template: "%s | Studio MW",
   },
   description:
-    "Een onafhankelijke kijk op de garderobe van morgen. Studio MW. Ontwikkelomgeving met fictieve producten.",
+    "An independent perspective on tomorrow’s wardrobe. Studio MW. Test store with fictional products.",
   robots: { index: false, follow: false },
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   );

@@ -31,7 +31,7 @@ export const productSchema = z
       .url()
       .refine(
         (v) => v.startsWith("https://images.unsplash.com/"),
-        "Gebruik een Unsplash-afbeelding",
+        "Use an Unsplash image",
       ),
     variants: z.array(variantSchema).min(1).max(100),
     version: z.number().int().positive().optional(),
@@ -40,13 +40,13 @@ export const productSchema = z
     if (p.status === "scheduled" && !p.releaseAt)
       c.addIssue({
         code: "custom",
-        message: "Een ingepland product vereist een releasedatum",
+        message: "A scheduled product requires a release date",
         path: ["releaseAt"],
       });
     if (new Set(p.variants.map((v) => v.sku)).size !== p.variants.length)
       c.addIssue({
         code: "custom",
-        message: "SKU’s moeten uniek zijn",
+        message: "SKUs must be unique",
         path: ["variants"],
       });
   });
@@ -89,11 +89,11 @@ export function saleable(
   );
 }
 export const euro = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR" }).format(
     n / 100,
   );
 export const date = (s: string) =>
-  new Intl.DateTimeFormat("nl-NL", {
+  new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Europe/Amsterdam",

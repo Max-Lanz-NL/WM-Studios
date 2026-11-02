@@ -6,16 +6,15 @@ export default function ConfigurationNeeded() {
       <Link className="wordmark" href="/">
         <BrandLogo />
       </Link>
-      <p className="eyebrow">STAGING / CONFIGURATIE</p>
-      <h1>De studio wordt verbonden.</h1>
+      <p className="eyebrow">STAGING / CONFIGURATION</p>
+      <h1>Connecting the studio.</h1>
       <p>
-        Configureer de lokale Supabase- of stagingverbinding via .env.local. De
-        website gebruikt uitsluitend de centrale PostgreSQL-database. De
-        oorspronkelijke SQLite-bestanden blijven beschikbaar voor een
-        gecontroleerde import.
+        Configure the local or staging Supabase connection in .env.local. The
+        website uses the central PostgreSQL database. The original SQLite files
+        remain available for a controlled import.
       </p>
       <p>
-        Volg docs/SUPABASE-MIGRATION.md. Zet geen sleutels in broncode of
+        Follow docs/SUPABASE-MIGRATION.md. Never put keys in source code or
         GitHub.
       </p>
     </main>

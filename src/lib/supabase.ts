@@ -15,9 +15,7 @@ export function serviceClient() {
   const { url } = configuration();
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!key)
-    throw new Error(
-      "Configureer SUPABASE_SECRET_KEY uitsluitend op de server.",
-    );
+    throw new Error("Configure SUPABASE_SECRET_KEY on the server only.");
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

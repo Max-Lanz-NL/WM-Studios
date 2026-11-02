@@ -3,20 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 const pages: Record<string, { title: string; text: string }> = {
   shipping: {
-    title: "Verzending & retouren",
-    text: "Deze ontwikkelomgeving verwerkt uitsluitend fictieve bestellingen. Verzendzones, tarieven, levertijden en het retourbeleid moeten vóór livegang worden geconfigureerd en gecontroleerd. Er vindt geen fysieke verzending plaats.",
+    title: "Shipping & returns",
+    text: "This test store only processes fictional orders. Shipping destinations, rates, delivery times and the returns policy must be configured and checked before launch. No physical items are shipped.",
   },
   contact: {
     title: "Contact",
-    text: "Studio MW wordt opgericht door Willemijn en Max. Het zakelijke contactadres, KvK-nummer, btw-nummer en vestigingsadres zijn nog niet aangeleverd. Deze gegevens worden vóór livegang toegevoegd.",
+    text: "Studio MW is being founded by Willemijn and Max. Business contact details, registration number, VAT number and business address have not been provided yet. These details will be added before launch.",
   },
   privacy: {
-    title: "Privacy & cookies — concept",
-    text: "Deze demo bewaart je winkelmand en favorieten lokaal in je browser. Een strikt noodzakelijke cookie beveiligt de beheersessie. Er worden geen marketingcookies geplaatst. Productafbeeldingen worden van Unsplash geladen; daarbij maakt je browser verbinding met die externe dienst. Testorders en wachtlijsten worden centraal opgeslagen in de Supabase-database van Studio MW. Vercel verzorgt de hosting van deze testversie. Gebruik fictieve gegevens. Een definitieve privacyverklaring met bewaartermijnen en contactgegevens moet vóór livegang worden opgesteld.",
+    title: "Privacy & cookies — draft",
+    text: "This demo stores your bag and favourites locally in your browser. A strictly necessary cookie secures staff sessions. No marketing cookies are set. Product images are loaded from Unsplash, which connects your browser to that external service. Test orders and waitlist entries are stored centrally in Studio MW's Supabase database. Vercel hosts this test version. Use fictional details. A final privacy notice with retention periods and contact details must be prepared before launch.",
   },
   terms: {
-    title: "Algemene voorwaarden — concept",
-    text: "Deze tekst is geen definitief juridisch document. De winkel is uitsluitend een ontwikkelomgeving. Er kunnen geen echte koopovereenkomsten worden gesloten. Algemene voorwaarden, consumentenrechten, herroepingsinformatie en bedrijfsgegevens moeten vóór livegang worden vastgesteld en juridisch gecontroleerd.",
+    title: "Terms & conditions — draft",
+    text: "This is a draft, not a final legal document. The store is a test environment only and cannot accept real purchases. Terms, consumer rights, withdrawal information and business details must be finalised and legally reviewed before launch.",
   },
 };
 export async function generateMetadata({
@@ -25,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const page = pages[(await params).slug];
-  return { title: page?.title || "Pagina niet gevonden" };
+  return { title: page?.title || "Page not found" };
 }
 export default async function Info({
   params,
@@ -43,7 +43,7 @@ export default async function Info({
       <h1>{p.title}</h1>
       <p>{p.text}</p>
       <Link className="button dark" href="/">
-        Terug naar de studio ↗
+        Back to the studio ↗
       </Link>
     </main>
   );

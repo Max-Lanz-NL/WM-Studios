@@ -24,19 +24,19 @@ import { Product, ProductInput, Order, euro, date } from "@/lib/model";
 import { useModal } from "./use-modal";
 import type { Staff } from "@/lib/auth";
 const statusLabels: Record<string, string> = {
-  draft: "Concept",
-  review: "Wacht op controle",
-  approved: "Goedgekeurd",
-  scheduled: "Ingepland",
-  published: "Gepubliceerd",
-  archived: "Gearchiveerd",
-  paid_demo: "Betaald (demo)",
-  packed: "Ingepakt",
-  shipped: "Verzonden (demo)",
-  pending_payment: "Wacht op betaling",
-  paid: "Betaald",
-  cancelled: "Geannuleerd",
-  expired: "Verlopen",
+  draft: "Draft",
+  review: "Awaiting review",
+  approved: "Approved",
+  scheduled: "Scheduled",
+  published: "Published",
+  archived: "Archived",
+  paid_demo: "Paid (demo)",
+  packed: "Packed",
+  shipped: "Shipped (demo)",
+  pending_payment: "Awaiting payment",
+  paid: "Paid",
+  cancelled: "Cancelled",
+  expired: "Expired",
 };
 const fresh: ProductInput = {
   name: "",
@@ -72,7 +72,7 @@ export default function Admin({
   staff: Staff | null;
 }) {
   const router = useRouter(),
-    [tab, setTab] = useState("Overzicht"),
+    [tab, setTab] = useState("Overview"),
     [query, setQuery] = useState(""),
     [status, setStatus] = useState("all"),
     [editor, setEditor] = useState<(ProductInput & { id?: string }) | null>(
@@ -123,7 +123,7 @@ export default function Admin({
             <br />
             to your studio.
           </h1>
-          <p>De werkruimte voor alles wat je maakt, lanceert en verkoopt.</p>
+          <p>The workspace for everything you create, launch and sell.</p>
           <form
             action={async (f) => {
               await send({
@@ -134,7 +134,7 @@ export default function Admin({
             }}
           >
             <label>
-              E-mailadres
+              Email address
               <input
                 name="email"
                 type="email"
@@ -143,7 +143,7 @@ export default function Admin({
               />
             </label>
             <label>
-              Wachtwoord
+              Password
               <input
                 name="password"
                 type="password"
@@ -184,13 +184,13 @@ export default function Admin({
       (o) => o.status === "paid_demo" || o.status === "paid",
     );
   const nav = [
-    { name: "Overzicht", icon: LayoutDashboard },
-    { name: "Producten", icon: Package },
+    { name: "Overview", icon: LayoutDashboard },
+    { name: "Products", icon: Package },
     { name: "Releases", icon: CalendarDays },
-    { name: "Bestellingen", icon: ShoppingBag },
-    { name: "Voorraad", icon: Boxes },
+    { name: "Orders", icon: ShoppingBag },
+    { name: "Stock", icon: Boxes },
     { name: "Website", icon: FileText },
-    { name: "Instellingen", icon: Settings },
+    { name: "Settings", icon: Settings },
   ];
   function go(name: string) {
     setTab(name);
@@ -204,7 +204,7 @@ export default function Admin({
   );
   function exportOrders() {
     const rows = [
-      ["Order", "Datum", "Status", "Totaal EUR"],
+      ["Order", "Date", "Status", "Total EUR"],
       ...orders.map((o) => [
         o.number,
         o.createdAt,
@@ -234,9 +234,9 @@ export default function Admin({
         <nav>
           {nav
             .filter((n) =>
-              n.name === "Bestellingen"
+              n.name === "Orders"
                 ? staff?.permissions.includes("orders.read")
-                : ["Producten", "Releases", "Voorraad"].includes(n.name)
+                : ["Products", "Releases", "Stock"].includes(n.name)
                   ? staff?.permissions.includes("catalog.write")
                   : n.name === "Website"
                     ? staff?.permissions.includes("content.write")
@@ -250,7 +250,7 @@ export default function Admin({
               >
                 <n.icon size={18} />
                 {n.name}
-                {n.name === "Bestellingen" && pending.length > 0 && (
+                {n.name === "Orders" && pending.length > 0 && (
                   <small>{pending.length}</small>
                 )}
               </button>
@@ -258,7 +258,7 @@ export default function Admin({
         </nav>
         <div className="sidebar-bottom">
           <Link href="/" target="_blank">
-            Bekijk webshop <ArrowUpRight size={16} />
+            View store <ArrowUpRight size={16} />
           </Link>
           <span className="demo-pill">DEMO ENVIRONMENT</span>
           <div className="profile">
@@ -268,7 +268,7 @@ export default function Admin({
               <span>{staff?.role} · test / staging</span>
             </div>
             <button
-              aria-label="Uitloggen"
+              aria-label="Sign out"
               onClick={() => send({ action: "logout" })}
             >
               <LogOut size={16} />
@@ -281,7 +281,7 @@ export default function Admin({
           <div>
             <button
               className="mobile-menu"
-              aria-label="Navigatie"
+              aria-label="Navigation"
               onClick={() => setMobile(!mobile)}
             >
               <PanelLeft size={19} />
@@ -296,35 +296,35 @@ export default function Admin({
         </header>
         <div className="demo-banner">
           <span>
-            <i /> Ontwikkelomgeving — alle producten, orders en bedragen zijn
-            fictief.
+            <i /> Test environment — all products, orders and amounts are
+            fictional.
           </span>
-          <button onClick={() => go("Instellingen")}>
-            Bekijk configuratie <ArrowUpRight size={13} />
+          <button onClick={() => go("Settings")}>
+            View configuration <ArrowUpRight size={13} />
           </button>
         </div>
         <main className="admin-main">
           <div className="admin-heading">
             <div>
               <p className="eyebrow">YOUR COLLECTIVE, AT A GLANCE</p>
-              <h1>{tab === "Overzicht" ? "A new day in the studio." : tab}</h1>
+              <h1>{tab === "Overview" ? "A new day in the studio." : tab}</h1>
               <p>
-                {tab === "Overzicht"
-                  ? "Van het eerste idee tot de laatste bestelling. Hier komt alles samen."
-                  : tab === "Producten"
-                    ? "Ontwerp, beheer en publiceer de volgende essentials."
+                {tab === "Overview"
+                  ? "From the first idea to the final order. Everything comes together here."
+                  : tab === "Products"
+                    ? "Design, manage and publish your next essentials."
                     : tab === "Releases"
-                      ? "Geef het volgende hoofdstuk een moment."
-                      : "Alles op één plek. Klaar voor de volgende stap."}
+                      ? "Give the next chapter its moment."
+                      : "Everything in one place. Ready for the next step."}
               </p>
             </div>
             {staff?.permissions.includes("catalog.write") &&
-              ["Overzicht", "Producten", "Releases"].includes(tab) && (
+              ["Overview", "Products", "Releases"].includes(tab) && (
                 <button
                   className="button dark"
                   onClick={() => setEditor(structuredClone(fresh))}
                 >
-                  <Plus size={16} /> Nieuw product
+                  <Plus size={16} /> New product
                 </button>
               )}
           </div>
@@ -333,33 +333,33 @@ export default function Admin({
               {message}
             </p>
           )}
-          {tab === "Overzicht" && (
+          {tab === "Overview" && (
             <>
               <div className="stat-grid">
                 {[
                   {
-                    label: "DEMO-OMZET",
+                    label: "DEMO REVENUE",
                     value: euro(total),
-                    foot: "Opgeslagen demo-bestellingen",
+                    foot: "Saved demo orders",
                     icon: ArrowUpRight,
                   },
                   {
-                    label: "BESTELLINGEN",
+                    label: "ORDERS",
                     value: orders.length,
-                    foot: `${pending.length} klaar voor verwerking`,
+                    foot: `${pending.length} ready to process`,
                     icon: ShoppingBag,
                   },
                   {
-                    label: "ACTIEVE PRODUCTEN",
+                    label: "ACTIVE PRODUCTS",
                     value: products.filter((p) => p.status === "published")
                       .length,
-                    foot: `${products.length} producten in je studio`,
+                    foot: `${products.length} products in your studio`,
                     icon: Package,
                   },
                   {
-                    label: "AANKOMENDE RELEASES",
+                    label: "UPCOMING RELEASES",
                     value: releases.length,
-                    foot: `${waitlist} wachtlijstinschrijvingen`,
+                    foot: `${waitlist} waitlist sign-ups`,
                     icon: CalendarDays,
                   },
                 ].map((s) => (
@@ -377,8 +377,8 @@ export default function Admin({
                 <section className="admin-card sales-card">
                   <div className="card-heading">
                     <div>
-                      <h2>Verkoopoverzicht</h2>
-                      <p>Demo-omzet per dag · afgelopen 7 dagen</p>
+                      <h2>Sales overview</h2>
+                      <p>Demo revenue per day · last 7 days</p>
                     </div>
                     <span className="badge">EUR</span>
                   </div>
@@ -389,10 +389,10 @@ export default function Admin({
                       const amount = orders
                         .filter(
                           (o) =>
-                            new Date(o.createdAt).toLocaleDateString("nl-NL", {
+                            new Date(o.createdAt).toLocaleDateString("en-GB", {
                               timeZone: "Europe/Amsterdam",
                             }) ===
-                            day.toLocaleDateString("nl-NL", {
+                            day.toLocaleDateString("en-GB", {
                               timeZone: "Europe/Amsterdam",
                             }),
                         )
@@ -411,7 +411,7 @@ export default function Admin({
                             }}
                           />
                           <small>
-                            {day.toLocaleDateString("nl-NL", {
+                            {day.toLocaleDateString("en-GB", {
                               weekday: "short",
                               timeZone: "Europe/Amsterdam",
                             })}
@@ -422,44 +422,44 @@ export default function Admin({
                   </div>
                   {!orders.length && (
                     <p className="chart-empty">
-                      Je eerste hoofdstuk begint met je eerste order.
+                      Your first chapter starts with your first order.
                     </p>
                   )}
                 </section>
                 <section className="admin-card attention">
                   <p className="eyebrow">NEXT UP</p>
-                  <h2>In de studio.</h2>
-                  <button onClick={() => go("Bestellingen")}>
+                  <h2>In the studio.</h2>
+                  <button onClick={() => go("Orders")}>
                     <ShoppingBag size={19} />
                     <span>
-                      Orders verwerken<small>Klaar om in te pakken</small>
+                      Process orders<small>Ready to pack</small>
                     </span>
                     <b>{pending.length}</b>
                     <ArrowUpRight size={15} />
                   </button>
-                  <button onClick={() => go("Producten")}>
+                  <button onClick={() => go("Products")}>
                     <Check size={19} />
                     <span>
-                      Producten controleren<small>Wachten op goedkeuring</small>
+                      Review products<small>Awaiting approval</small>
                     </span>
                     <b>
                       {products.filter((p) => p.status === "review").length}
                     </b>
                     <ArrowUpRight size={15} />
                   </button>
-                  <button onClick={() => go("Voorraad")}>
+                  <button onClick={() => go("Stock")}>
                     <Boxes size={19} />
                     <span>
-                      Lage voorraad<small>Minder dan 5 beschikbaar</small>
+                      Low stock<small>Fewer than 5 available</small>
                     </span>
                     <b>{low.length}</b>
                     <ArrowUpRight size={15} />
                   </button>
                   <div className="studio-note">
                     GOOD THINGS START HERE.
-                    <p>Een nieuw idee? Geef het ruimte.</p>
+                    <p>A new idea? Give it room.</p>
                     <button onClick={() => setEditor(structuredClone(fresh))}>
-                      Maak een productconcept <Plus size={14} />
+                      Create a draft product <Plus size={14} />
                     </button>
                   </div>
                 </section>
@@ -467,8 +467,8 @@ export default function Admin({
               <div className="admin-card">
                 <div className="card-heading">
                   <div>
-                    <h2>De volgende release</h2>
-                    <p>Een nieuw perspectief, klaar voor de wereld.</p>
+                    <h2>The next release</h2>
+                    <p>A new perspective, ready for the world.</p>
                   </div>
                   <button className="text-link" onClick={() => go("Releases")}>
                     Release Center <ArrowUpRight size={15} />
@@ -485,22 +485,22 @@ export default function Admin({
                           {p.releaseAt && date(p.releaseAt)} · Amsterdam
                         </span>
                       </div>
-                      <span className="badge">Ingepland</span>
+                      <span className="badge">Scheduled</span>
                       <button
                         onClick={() => setEditor(p)}
                         className="text-link"
                       >
-                        Bekijk release <ArrowUpRight size={15} />
+                        View release <ArrowUpRight size={15} />
                       </button>
                     </div>
                   ))
                 ) : (
-                  <p className="empty">Nog geen releases ingepland.</p>
+                  <p className="empty">No releases scheduled yet.</p>
                 )}
               </div>
             </>
           )}
-          {tab === "Producten" && (
+          {tab === "Products" && (
             <section className="admin-card">
               <div className="table-toolbar">
                 <label className="search-input">
@@ -508,15 +508,15 @@ export default function Admin({
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Zoek een product…"
+                    placeholder="Search products…"
                   />
                 </label>
                 <select
-                  aria-label="Productstatus"
+                  aria-label="Product status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                 >
-                  <option value="all">Alle statussen</option>
+                  <option value="all">All statuses</option>
                   {Object.keys(statusLabels)
                     .slice(0, 6)
                     .map((s) => (
@@ -532,10 +532,10 @@ export default function Admin({
                   <thead>
                     <tr>
                       <th>Product</th>
-                      <th>Kledinglijn</th>
+                      <th>Clothing line</th>
                       <th>Status</th>
-                      <th>Voorraad</th>
-                      <th>Prijs</th>
+                      <th>Stock</th>
+                      <th>Price</th>
                       <th />
                     </tr>
                   </thead>
@@ -548,7 +548,7 @@ export default function Admin({
                             <div>
                               <strong>{p.name}</strong>
                               <small>
-                                {p.variants.length} varianten · {p.category}
+                                {p.variants.length} variants · {p.category}
                               </small>
                             </div>
                           </div>
@@ -579,10 +579,9 @@ export default function Admin({
           {tab === "Releases" && (
             <>
               <div className="release-notice">
-                Verkoop wordt altijd server-side tegen de releasedatum
-                gecontroleerd. Supabase Cron publiceert releases en ruimt
-                verlopen reserveringen op. Automatische e-mails zijn nog niet
-                aangesloten.
+                Sales are always checked against the release date on the server.
+                Supabase Cron publishes releases and clears expired
+                reservations. Automated emails are not connected yet.
               </div>
               <div className="release-cards">
                 {releases.map((p) => (
@@ -603,7 +602,7 @@ export default function Admin({
               </div>
               <section className="admin-card">
                 <div className="card-heading">
-                  <h2>Ontwikkelpijplijn</h2>
+                  <h2>Development pipeline</h2>
                 </div>
                 {["draft", "review", "approved"].map((s) => (
                   <div className="pipeline-row" key={s}>
@@ -611,7 +610,7 @@ export default function Admin({
                     <b>{products.filter((p) => p.status === s).length}</b>
                     <button
                       onClick={() => {
-                        go("Producten");
+                        go("Products");
                         setStatus(s);
                       }}
                       className="text-link"
@@ -623,11 +622,11 @@ export default function Admin({
               </section>
             </>
           )}
-          {tab === "Bestellingen" && (
+          {tab === "Orders" && (
             <section className="admin-card">
               <div className="card-heading">
                 <div>
-                  <h2>Alle bestellingen</h2>
+                  <h2>All orders</h2>
                   <p>
                     {orders.length} demo-orders · prijzen als historische
                     snapshots
@@ -640,11 +639,8 @@ export default function Admin({
               {!orders.length ? (
                 <div className="empty">
                   <ShoppingBag size={30} />
-                  <h3>Je eerste order komt hier.</h3>
-                  <p>
-                    Plaats een demo-order in de webshop om de workflow te
-                    testen.
-                  </p>
+                  <h3>Your first order will appear here.</h3>
+                  <p>Place a demo order in the store to test the workflow.</p>
                   <Link className="button dark" href="/">
                     Open webshop ↗
                   </Link>
@@ -655,10 +651,10 @@ export default function Admin({
                     <thead>
                       <tr>
                         <th>Order</th>
-                        <th>Klant</th>
-                        <th>Datum</th>
+                        <th>Customer</th>
+                        <th>Date</th>
                         <th>Status</th>
-                        <th>Totaal</th>
+                        <th>Total</th>
                         <th />
                       </tr>
                     </thead>
@@ -692,15 +688,15 @@ export default function Admin({
               )}
             </section>
           )}
-          {tab === "Voorraad" && (
+          {tab === "Stock" && (
             <section className="admin-card">
               <div className="card-heading">
                 <div>
-                  <h2>Voorraad per variant</h2>
+                  <h2>Stock by variant</h2>
                   <p>
-                    Aanpassingen via de producteditor. Mutaties worden centraal
-                    bijgehouden; dit scherm toont de beschikbare voorraad na
-                    reserveringen.
+                    Make changes in the product editor. Changes are recorded
+                    centrally; this view shows stock available after
+                    reservations.
                   </p>
                 </div>
               </div>
@@ -709,9 +705,9 @@ export default function Admin({
                   <thead>
                     <tr>
                       <th>Product / SKU</th>
-                      <th>Kleur</th>
-                      <th>Maat</th>
-                      <th>Beschikbaar</th>
+                      <th>Colour</th>
+                      <th>Size</th>
+                      <th>Available</th>
                       <th />
                     </tr>
                   </thead>
@@ -754,11 +750,11 @@ export default function Admin({
               <form
                 action={async () => {
                   if (await send({ action: "home", content: home }))
-                    setMessage("Homepage opgeslagen.");
+                    setMessage("Homepage saved.");
                 }}
               >
                 <label>
-                  Hoofdtitel
+                  Headline
                   <textarea
                     value={home.headline}
                     maxLength={150}
@@ -769,7 +765,7 @@ export default function Admin({
                   />
                 </label>
                 <label>
-                  Introductie
+                  Introduction
                   <textarea
                     value={home.subtitle}
                     maxLength={500}
@@ -779,57 +775,58 @@ export default function Admin({
                   />
                 </label>
                 <button className="button dark" disabled={busy}>
-                  Wijzigingen opslaan <Check size={16} />
+                  Save changes <Check size={16} />
                 </button>
               </form>
               <p className="muted">
-                Deze eerste CMS-versie beheert de hero-tekst. Secties, media en
-                versiebeheer volgen later.
+                This first content editor manages the homepage headline and
+                introduction. Sections, media and version history will follow
+                later.
               </p>
             </section>
           )}
-          {tab === "Instellingen" && (
+          {tab === "Settings" && (
             <section className="admin-card">
               <div className="card-heading">
                 <div>
-                  <h2>Integratieoverzicht</h2>
+                  <h2>Integration overview</h2>
                   <p>
-                    Een eerlijke blik op wat werkt en wat nog aangesloten moet
-                    worden.
+                    A clear view of what works and what still needs to be
+                    connected.
                   </p>
                 </div>
               </div>
               {[
                 {
                   name: "Supabase PostgreSQL",
-                  text: "Centrale producten, varianten, voorraad, klanten, orders, releases en mutatiehistorie met RLS.",
+                  text: "Central products, variants, stock, customers, orders, releases and change history with row-level security.",
                   active: true,
                 },
                 {
-                  name: "Beheerbeveiliging",
-                  text: "Persoonlijke Supabase Auth-sessies, HTTP-only cookies en server- en databaserechten.",
+                  name: "Admin security",
+                  text: "Individual Supabase Auth sessions, HTTP-only cookies, and server and database permissions.",
                   active: true,
                 },
                 {
-                  name: "Medewerkers & rollen",
-                  text: "Owner, admin, designer, warehouse en support. Toegang wordt bij elk verzoek gecontroleerd.",
+                  name: "Staff & roles",
+                  text: "Owner, administrator, designer, warehouse and support. Access is checked on every request.",
                   active: true,
                 },
                 {
                   name: "Mollie",
-                  text: "Nog niet aangesloten · Alleen expliciete demo-checkout; geen geldverkeer.",
+                  text: "Not connected · Demo checkout only; no real payments.",
                 },
                 {
                   name: "Sendcloud & printers",
-                  text: "Nog niet aangesloten · Geen labels, tracking of printercommunicatie.",
+                  text: "Not connected · No shipping labels, tracking or printer communication.",
                 },
                 {
                   name: "Supabase Cron & e-mail",
-                  text: "Databaseplanning via migratie. Controleer de Cron-status in staging; e-mail is nog niet aangesloten.",
+                  text: "Database scheduling is installed through migrations. Check the staging Cron status; email is not connected yet.",
                 },
                 {
-                  name: "Productiehosting",
-                  text: "Alleen local/staging-configuratie toegestaan. Productie staat expliciet uit.",
+                  name: "Live hosting",
+                  text: "Only local or staging configuration is allowed. Live sales are disabled.",
                 },
               ].map((x) => (
                 <div className="integration" key={x.name}>
@@ -859,15 +856,15 @@ export default function Admin({
             className="editor drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Producteditor"
+            aria-label="Product editor"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="drawer-header">
               <div>
                 <p className="eyebrow">PRODUCT STUDIO</p>
-                <h2>{editor.id ? "Bewerk product" : "Een nieuw hoofdstuk."}</h2>
+                <h2>{editor.id ? "Edit product" : "A new chapter."}</h2>
               </div>
-              <button aria-label="Sluiten" onClick={() => setEditor(null)}>
+              <button aria-label="Close" onClick={() => setEditor(null)}>
                 <X />
               </button>
             </div>
@@ -881,12 +878,12 @@ export default function Admin({
                   })
                 ) {
                   setEditor(null);
-                  setMessage("Product opgeslagen.");
+                  setMessage("Product saved.");
                 }
               }}
             >
               <label>
-                Productnaam
+                Product name
                 <input
                   value={editor.name}
                   minLength={2}
@@ -921,7 +918,7 @@ export default function Admin({
               </label>
               <div className="form-row">
                 <label>
-                  Kledinglijn
+                  Clothing line
                   <select
                     value={editor.brand}
                     onChange={(e) =>
@@ -939,7 +936,7 @@ export default function Admin({
                   </select>
                 </label>
                 <label>
-                  Categorie
+                  Category
                   <select
                     value={editor.category}
                     onChange={(e) =>
@@ -958,7 +955,7 @@ export default function Admin({
                 </label>
               </div>
               <label>
-                Doelgroep
+                Audience
                 <select
                   value={editor.gender}
                   onChange={(e) =>
@@ -974,7 +971,7 @@ export default function Admin({
                 </select>
               </label>
               <label>
-                Beschrijving
+                Description
                 <textarea
                   value={editor.description}
                   maxLength={5000}
@@ -986,7 +983,7 @@ export default function Admin({
               </label>
               <div className="form-row">
                 <label>
-                  Verkoopprijs (€ incl. btw)
+                  Selling price (€ incl. VAT)
                   <input
                     type="number"
                     step="0.01"
@@ -1002,7 +999,7 @@ export default function Admin({
                   />
                 </label>
                 <label>
-                  Publicatiestatus
+                  Publication status
                   <select
                     value={editor.status}
                     onChange={(e) =>
@@ -1033,12 +1030,12 @@ export default function Admin({
                 />
               </label>
               <p className="muted">
-                Voer een UTC-tijd met Z in. De webshop toont deze in
-                Europe/Amsterdam, met zomer- en wintertijd. Een lokale
-                datumkiezer volgt.
+                Enter a UTC timestamp ending in Z. The store displays it in
+                Europe/Amsterdam, including daylight saving time. A local date
+                picker will follow later.
               </p>
               <label>
-                Afbeelding (images.unsplash.com URL)
+                Image (images.unsplash.com URL)
                 <input
                   type="url"
                   required
@@ -1048,12 +1045,12 @@ export default function Admin({
                   }
                 />
               </label>
-              <h3>Varianten & voorraad</h3>
+              <h3>Variants & stock</h3>
               <div className="variant-labels">
-                <span>Maat</span>
-                <span>Kleur</span>
+                <span>Size</span>
+                <span>Colour</span>
                 <span>SKU</span>
-                <span>Voorraad</span>
+                <span>Stock</span>
                 <span />
               </div>
               {editor.variants.map((v, i) => (
@@ -1086,7 +1083,7 @@ export default function Admin({
                   ))}
                   <button
                     type="button"
-                    aria-label="Variant verwijderen"
+                    aria-label="Remove variant"
                     disabled={editor.variants.length === 1}
                     onClick={() =>
                       setEditor({
@@ -1112,7 +1109,7 @@ export default function Admin({
                   })
                 }
               >
-                <Plus size={14} /> Variant toevoegen
+                <Plus size={14} /> Add variant
               </button>
               {message && (
                 <p role="alert" className="notice">
@@ -1121,7 +1118,7 @@ export default function Admin({
               )}
               <div className="editor-save">
                 <button className="button dark full" disabled={busy}>
-                  {busy ? "Opslaan…" : "Product opslaan"} <Check size={17} />
+                  {busy ? "Saving…" : "Save product"} <Check size={17} />
                 </button>
               </div>
             </form>
@@ -1134,15 +1131,12 @@ export default function Admin({
             className="drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Orderdetails"
+            aria-label="Order details"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="drawer-header">
               <h2>{selectedOrder.number}</h2>
-              <button
-                aria-label="Sluiten"
-                onClick={() => setSelectedOrder(null)}
-              >
+              <button aria-label="Close" onClick={() => setSelectedOrder(null)}>
                 <X />
               </button>
             </div>
@@ -1156,7 +1150,7 @@ export default function Admin({
               {selectedOrder.address}
             </p>
             <p>{date(selectedOrder.createdAt)}</p>
-            <h3>Picklijst</h3>
+            <h3>Pick list</h3>
             {selectedOrder.items.map((i) => (
               <label className="pick-line" key={i.sku}>
                 <input type="checkbox" />
@@ -1171,11 +1165,11 @@ export default function Admin({
             ))}
             <div className="totals">
               <p>
-                <span>Verzending</span>
+                <span>Shipping</span>
                 <b>{euro(selectedOrder.shipping)}</b>
               </p>
               <p>
-                <span>Totaal incl. btw</span>
+                <span>Total incl. VAT</span>
                 <b>{euro(selectedOrder.total)}</b>
               </p>
             </div>
@@ -1198,14 +1192,14 @@ export default function Admin({
                 }}
               >
                 {selectedOrder.status !== "packed"
-                  ? "Markeer als ingepakt"
-                  : "Markeer als verzonden (demo)"}{" "}
+                  ? "Mark as packed"
+                  : "Mark as shipped (demo)"}{" "}
                 <ArrowRight size={16} />
               </button>
             )}
             <p className="muted">
-              Afvinken is een lokale pickhulp. Verzendlabels en tracking zijn
-              nog niet aangesloten.
+              Ticking items is a local packing aid. Shipping labels and tracking
+              are not connected yet.
             </p>
             {message && (
               <p role="status" className="notice">

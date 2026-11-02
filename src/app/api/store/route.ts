@@ -41,16 +41,16 @@ export async function POST(request: Request) {
       await joinWaitlist(input.productId, input.email);
       return NextResponse.json({ ok: true });
     }
-    throw new Error("Onbekende actie");
+    throw new Error("Unknown action");
   } catch (e) {
     return NextResponse.json(
       {
         error:
           e instanceof z.ZodError
-            ? "Controleer de ingevulde gegevens"
+            ? "Please check the details you entered"
             : e instanceof Error
               ? e.message
-              : "Verzoek mislukt",
+              : "Request failed",
       },
       { status: 400 },
     );

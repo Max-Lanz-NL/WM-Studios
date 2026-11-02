@@ -40,10 +40,10 @@ function product(status = "published", releaseAt: string | null = null) {
 async function login(page: Page, person: "MAX" | "WILLEMIJN" = "MAX") {
   await page.goto("/admin");
   await page
-    .getByLabel("E-mailadres", { exact: true })
+    .getByLabel("Email address", { exact: true })
     .fill(process.env[`LOCAL_${person}_EMAIL`]!);
   await page
-    .getByLabel("Wachtwoord", { exact: true })
+    .getByLabel("Password", { exact: true })
     .fill(process.env[`LOCAL_${person}_PASSWORD`]!);
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(
@@ -97,7 +97,7 @@ test("echte persoonlijke logins, veilige cookies en uitloggen", async ({
       c.name.includes("auth-token"),
     );
     expect(second[0].value !== first[0].value).toBe(true);
-    await page.getByRole("button", { name: "Uitloggen" }).click();
+    await page.getByRole("button", { name: "Sign out" }).click();
     await expect(
       page.getByRole("button", { name: "Open the studio" }),
     ).toBeVisible();
@@ -229,21 +229,23 @@ test("webshop, echte checkout en orderverwerking op centrale PostgreSQL", async 
   await page.goto("/products/" + p.slug);
   await page.getByRole("button", { name: "M", exact: true }).click();
   await page.getByRole("button", { name: "Add to bag" }).click();
-  await page.getByRole("button", { name: "Naar demo-checkout" }).click();
-  await page.getByLabel("Naam", { exact: true }).fill("Lokale Acceptatie");
+  await page.getByRole("button", { name: "Continue to demo checkout" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Lokale Acceptatie");
   await page
-    .getByLabel("E-mail", { exact: true })
+    .getByLabel("Email", { exact: true })
     .fill("acceptance@wm-studio.test");
-  await page.getByLabel("Straat en huisnummer").fill("Teststraat 1");
+  await page.getByLabel("Street address").fill("Teststraat 1");
   await page.getByLabel("Postcode").fill("1000 AA");
-  await page.getByLabel("Plaats", { exact: true }).fill("Teststad");
-  await page.getByRole("button", { name: "Demo-order plaatsen" }).click();
+  await page.getByLabel("City", { exact: true }).fill("Teststad");
+  await page.getByRole("button", { name: "Place demo order" }).click();
   await expect(
-    page.getByRole("heading", { name: "Bedankt. Je demo-order staat klaar." }),
+    page.getByRole("heading", {
+      name: "Thank you. Your demo order is confirmed.",
+    }),
   ).toBeVisible();
   await login(page);
   await page
-    .getByRole("button", { name: "Bestellingen", exact: false })
+    .getByRole("button", { name: "Orders", exact: false })
     .first()
     .click();
   const row = page
@@ -251,9 +253,9 @@ test("webshop, echte checkout en orderverwerking op centrale PostgreSQL", async 
     .filter({ hasText: "Lokale Acceptatie" })
     .first();
   await row.getByRole("button", { name: "Open" }).click();
-  await page.getByRole("button", { name: "Markeer als ingepakt" }).click();
+  await page.getByRole("button", { name: "Mark as packed" }).click();
   await expect(
-    page.getByRole("button", { name: "Markeer als verzonden (demo)" }),
+    page.getByRole("button", { name: "Mark as shipped (demo)" }),
   ).toBeVisible();
   const stock = await service
     .from("catalog")

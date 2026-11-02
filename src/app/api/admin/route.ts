@@ -20,13 +20,13 @@ export async function POST(request: Request) {
       const { error } = await client.auth.signInWithPassword(input);
       if (error)
         return NextResponse.json(
-          { error: "Inloggen mislukt. Controleer je gegevens." },
+          { error: "Sign-in failed. Check your details." },
           { status: 401, headers: { "Cache-Control": "private, no-store" } },
         );
       if (!(await currentStaff())) {
         await client.auth.signOut();
         return NextResponse.json(
-          { error: "Dit account heeft geen actieve medewerkerstoegang." },
+          { error: "This account does not have active staff access." },
           { status: 403 },
         );
       }
@@ -65,25 +65,25 @@ export async function POST(request: Request) {
       );
     } else {
       await requireAdmin();
-      throw new Error("Onbekende actie");
+      throw new Error("Unknown action");
     }
     return NextResponse.json(
       { ok: true },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Verzoek mislukt";
+    const message = e instanceof Error ? e.message : "Request failed";
     const status =
       message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 400;
     return NextResponse.json(
       {
         error:
           e instanceof z.ZodError
-            ? "Controleer de ingevulde gegevens"
+            ? "Please check the details you entered"
             : status === 401
-              ? "Log eerst in"
+              ? "Please sign in first"
               : status === 403
-                ? "Je hebt geen rechten voor deze actie"
+                ? "You do not have permission to perform this action"
                 : message,
       },
       { status, headers: { "Cache-Control": "private, no-store" } },

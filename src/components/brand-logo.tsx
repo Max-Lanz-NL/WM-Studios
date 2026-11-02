@@ -1,3 +1,4 @@
+import { englishCopy } from "@/lib/english-copy";
 /** Angular, interlocking ribbon monogram based on the founders' MW sketch. */
 export default function BrandLogo() {
   return (
@@ -26,7 +27,9 @@ export function brandName(value: string) {
 }
 
 export function brandText(value: string) {
-  return value
-    .replace(/WM Studio Collective/gi, "Studio MW")
-    .replace(/WM STUDIO/g, "STUDIO MW");
+  return englishCopy(
+    value
+      .replace(/WM Studio Collective/gi, "Studio MW")
+      .replace(/WM STUDIO/g, "STUDIO MW"),
+  );
 }

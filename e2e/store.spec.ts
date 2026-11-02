@@ -112,58 +112,58 @@ test("klant plaatst demo-order en beheerder verwerkt deze", async ({
   await page.getByRole("button", { name: "M", exact: true }).click();
   await page.getByRole("button", { name: "Add to bag" }).click();
   await expect(page.getByRole("heading", { name: "Your bag" })).toBeVisible();
-  await page.getByRole("button", { name: "Naar demo-checkout" }).click();
-  await page.getByLabel("Naam", { exact: true }).fill("Demo Klant");
-  await page.getByLabel("E-mail", { exact: true }).fill("demo@example.invalid");
-  await page.getByLabel("Straat en huisnummer").fill("Teststraat 1");
+  await page.getByRole("button", { name: "Continue to demo checkout" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Demo Customer");
+  await page.getByLabel("Email", { exact: true }).fill("demo@example.invalid");
+  await page.getByLabel("Street address").fill("Teststraat 1");
   await page.getByLabel("Postcode").fill("1000 AA");
-  await page.getByLabel("Plaats", { exact: true }).fill("Teststad");
-  await page.getByRole("button", { name: "Demo-order plaatsen" }).click();
+  await page.getByLabel("City", { exact: true }).fill("Teststad");
+  await page.getByRole("button", { name: "Place demo order" }).click();
   await expect(
-    page.getByRole("heading", { name: "Bedankt. Je demo-order staat klaar." }),
+    page.getByRole("heading", {
+      name: "Thank you. Your demo order is confirmed.",
+    }),
   ).toBeVisible();
   await page.goto("/admin");
   await page
-    .getByLabel("Wachtwoord", { exact: true })
+    .getByLabel("Password", { exact: true })
     .fill("local-e2e-test-password-only");
   await page
-    .getByLabel("E-mailadres", { exact: true })
+    .getByLabel("Email address", { exact: true })
     .fill("e2e-owner@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(
     page.getByRole("heading", { name: "A new day in the studio." }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Bestellingen", exact: false })
+    .getByRole("button", { name: "Orders", exact: false })
     .first()
     .click();
   await page.getByRole("button", { name: "Open ↗" }).first().click();
-  await page.getByRole("button", { name: "Markeer als ingepakt" }).click();
+  await page.getByRole("button", { name: "Mark as packed" }).click();
   await expect(
-    page.getByRole("button", { name: "Markeer als verzonden (demo)" }),
+    page.getByRole("button", { name: "Mark as shipped (demo)" }),
   ).toBeVisible();
 });
 test("producteditor slaat een nieuw concept op", async ({ page }) => {
   await page.goto("/admin");
   await page
-    .getByLabel("Wachtwoord", { exact: true })
+    .getByLabel("Password", { exact: true })
     .fill("local-e2e-test-password-only");
   await page
-    .getByLabel("E-mailadres", { exact: true })
+    .getByLabel("Email address", { exact: true })
     .fill("e2e-owner@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
-  await page.getByRole("button", { name: "Nieuw product" }).click();
+  await page.getByRole("button", { name: "New product" }).click();
   await page
-    .getByLabel("Productnaam", { exact: true })
+    .getByLabel("Product name", { exact: true })
     .fill("Test Studio " + Date.now());
   for (let i = 1; i <= 3; i++)
     await page
       .getByLabel(`sku variant ${i}`, { exact: true })
       .fill(`TEST-${Date.now()}-${i}`);
-  await page.getByRole("button", { name: "Product opslaan" }).click();
-  await expect(
-    page.getByText("Product opgeslagen.", { exact: true }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Save product" }).click();
+  await expect(page.getByText("Product saved.", { exact: true })).toBeVisible();
 });
 test("mobiele webshop blijft binnen het scherm", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -200,10 +200,10 @@ test("desktop preview", async ({ page }) => {
   });
   await page.goto("/admin");
   await page
-    .getByLabel("Wachtwoord", { exact: true })
+    .getByLabel("Password", { exact: true })
     .fill("local-e2e-test-password-only");
   await page
-    .getByLabel("E-mailadres", { exact: true })
+    .getByLabel("Email address", { exact: true })
     .fill("e2e-owner@example.invalid");
   await page.getByRole("button", { name: "Open the studio" }).click();
   await expect(

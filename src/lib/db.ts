@@ -2,17 +2,19 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { publicClient, sessionClient, serviceClient } from "./supabase";
 import type { Product, ProductInput, Order } from "./model";
+import { englishDatabaseMessage } from "./english-copy";
 function fail(error: { message: string; code?: string } | null) {
   if (!error) return;
-  if (error.code === "P0001") throw new Error(error.message);
+  if (error.code === "P0001")
+    throw new Error(englishDatabaseMessage(error.message));
   if (error.code === "42501") throw new Error("FORBIDDEN");
   if (error.code === "23505")
     throw new Error(
-      "Deze URL, SKU of combinatie van maat en kleur bestaat al.",
+      "This URL, SKU or size and colour combination already exists.",
     );
   if (["23514", "23502", "22P02"].includes(error.code || ""))
-    throw new Error("Controleer de ingevulde gegevens.");
-  throw new Error("De centrale database is tijdelijk niet beschikbaar.");
+    throw new Error("Please check the details you entered.");
+  throw new Error("The central database is temporarily unavailable.");
 }
 async function catalog(client: SupabaseClient): Promise<Product[]> {
   const { data, error } = await client.from("catalog").select("body");

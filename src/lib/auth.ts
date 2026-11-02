@@ -18,14 +18,14 @@ export async function currentStaff(): Promise<Staff | null> {
     .eq("user_id", user.id)
     .maybeSingle();
   if (membershipError)
-    throw new Error("Medewerkerrechten konden niet worden gecontroleerd.");
+    throw new Error("Staff permissions could not be verified.");
   if (!member?.active) return null;
   const { data, error: permissionError } = await client
     .from("role_permissions")
     .select("permission")
     .eq("role", member.role);
   if (permissionError)
-    throw new Error("Medewerkerrechten konden niet worden gecontroleerd.");
+    throw new Error("Staff permissions could not be verified.");
   return {
     id: user.id,
     email: user.email || "",
@@ -45,9 +45,9 @@ export async function rateLimit(key: string, max = 8) {
     bucket: key,
     max_requests: max,
   });
-  if (error) throw new Error("Verzoekcontrole tijdelijk niet beschikbaar");
+  if (error) throw new Error("Request validation is temporarily unavailable");
   if (!data)
-    throw new Error("Te veel verzoeken. Probeer het over een minuut opnieuw.");
+    throw new Error("Too many requests. Please try again in a minute.");
 }
 export function sameOrigin(request: Request) {
   const url = new URL(request.url);
@@ -55,5 +55,5 @@ export function sameOrigin(request: Request) {
     process.env.APP_ORIGIN ||
     `${url.protocol}//${request.headers.get("host") || url.host}`;
   if (request.headers.get("origin") !== expected)
-    throw new Error("Ongeldige herkomst");
+    throw new Error("Invalid request origin");
 }

@@ -73,15 +73,15 @@ it("controleert herkomst ook bij een afwijkende interne Next-hostnaam", () => {
         headers: { origin: "https://evil.invalid" },
       }),
     ),
-  ).toThrow("herkomst");
+  ).toThrow("origin");
 });
 it("faalt gesloten als de centrale rate-limitcontrole niet werkt", async () => {
   mocked.service.mockReturnValue({
     rpc: async () => ({ data: null, error: { message: "offline" } }),
   });
-  await expect(rateLimit("test")).rejects.toThrow("niet beschikbaar");
+  await expect(rateLimit("test")).rejects.toThrow("unavailable");
   mocked.service.mockReturnValue({
     rpc: async () => ({ data: false, error: null }),
   });
-  await expect(rateLimit("test")).rejects.toThrow("Te veel");
+  await expect(rateLimit("test")).rejects.toThrow("Too many");
 });

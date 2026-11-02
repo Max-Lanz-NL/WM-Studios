@@ -8,17 +8,17 @@ test("mobiele shop biedt zoeken, favorieten en kledinglijnen", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "The collection" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Filter kledinglijn")).toBeVisible();
+  await expect(page.getByLabel("Filter clothing line")).toBeVisible();
   await page.getByRole("button", { name: "Menu", exact: true }).click();
-  await page.getByRole("button", { name: "Zoeken", exact: true }).click();
-  await page.getByLabel("Zoek op productnaam").fill("Essential");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByLabel("Search by product name").fill("Essential");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.locator(".product-card")).toHaveCount(1);
   await page
-    .getByRole("button", { name: "Bewaar The Essential Tee", exact: true })
+    .getByRole("button", { name: "Save The Essential Tee", exact: true })
     .click();
   await page.getByRole("button", { name: "Menu", exact: true }).click();
-  await page.getByRole("button", { name: "Favorieten", exact: true }).click();
+  await page.getByRole("button", { name: "Favourites", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Your favourites" }),
   ).toBeVisible();
@@ -93,18 +93,18 @@ test("kleurkeuze en voorraad begrenzen de winkelmand voor checkout", async ({
   expect(created.ok()).toBe(true);
   const product = await created.json();
   await page.goto(`/products/${product.slug}`);
-  await page.getByLabel("Kleur", { exact: true }).selectOption("White");
+  await page.getByLabel("Colour", { exact: true }).selectOption("White");
   await page.getByRole("button", { name: "M", exact: true }).click();
   await page.getByRole("button", { name: "Add to bag" }).click();
   await expect(page.getByText("White / M", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Meer", exact: true }),
+    page.getByRole("button", { name: "Increase quantity", exact: true }),
   ).toBeDisabled();
   await page.reload();
-  await page.getByRole("button", { name: "Sluiten", exact: true }).click();
-  await page.getByRole("button", { name: "Winkelmand", exact: true }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("button", { name: "Shopping bag", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Meer", exact: true }),
+    page.getByRole("button", { name: "Increase quantity", exact: true }),
   ).toBeDisabled();
 });
 
@@ -114,19 +114,58 @@ test("Studio MW branding is consistent across store and admin", async ({
   await page.goto("/");
   await expect(page.locator("body")).not.toContainText("WM Studio Collective");
   await page.goto("/shop");
-  await expect(page).toHaveTitle("De collectie | Studio MW");
+  await expect(page).toHaveTitle("The collection | Studio MW");
   await expect(
     page.getByRole("link", { name: "Studio MW home", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".store-header .brand-mark")).toBeVisible();
   await expect(page.getByText("WM STUDIO", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Filter kledinglijn")).toContainText(
+  await expect(page.getByLabel("Filter clothing line")).toContainText(
     "STUDIO MW",
   );
   await page.goto("/info/contact");
-  await expect(page.locator("main")).toContainText("Studio MW wordt opgericht");
+  await expect(page.locator("main")).toContainText(
+    "Studio MW is being founded",
+  );
   await expect(page.locator(".brand-mark")).toBeVisible();
   await page.goto("/admin");
   await expect(page.locator(".brand-mark")).toBeVisible();
   await expect(page.locator("body")).not.toContainText("WM STUDIO COLLECTIVE");
+});
+
+test("store forms, information pages and login errors use English", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(
+    page.getByText("Free shipping from €150", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Shopping bag", exact: true }).click();
+  await expect(
+    page.getByText("Your bag is waiting for something special."),
+  ).toBeVisible();
+  await page.goto("/info/privacy");
+  await expect(
+    page.getByRole("heading", { name: "Privacy & cookies — draft" }),
+  ).toBeVisible();
+  await expect(page.locator("main")).toContainText(
+    "Test orders and waitlist entries are stored centrally",
+  );
+  await page.goto("/admin");
+  await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+  const denied = await request.post("/api/admin", {
+    headers: { origin: "http://127.0.0.1:3001" },
+    data: {
+      action: "login",
+      email: "nobody@example.invalid",
+      password: "not-a-valid-password",
+    },
+  });
+  expect(denied.status()).toBe(401);
+  expect((await denied.json()).error).toBe(
+    "Sign-in failed. Check your details.",
+  );
 });

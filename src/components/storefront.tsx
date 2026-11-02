@@ -111,12 +111,12 @@ export default function Storefront({
     if (!selected) return;
     const v = selected.variants.find((v) => v.sku === size);
     if (!v) {
-      setMessage("Selecteer eerst je maat.");
+      setMessage("Please select your size first.");
       return;
     }
     const existing = cart.find((l) => l.sku === size);
     if ((existing?.quantity || 0) >= Math.min(20, v.stock)) {
-      setMessage("Deze maat heeft onvoldoende voorraad.");
+      setMessage("There is not enough stock for this size.");
       return;
     }
     setCart((prev) =>
@@ -206,7 +206,7 @@ export default function Storefront({
       const d = await r.json();
       setMessage(
         r.ok
-          ? "Je staat op de demo-wachtlijst. E-mailverzending is nog niet aangesloten."
+          ? "You have joined the demo waitlist. Email notifications are not connected yet."
           : d.error,
       );
     } finally {
@@ -216,19 +216,19 @@ export default function Storefront({
   return (
     <>
       <a className="skip" href="#main">
-        Naar inhoud
+        Skip to content
       </a>
       <div className="announcement">
         <span>Independent by design. Collective by nature.</span>
         <span>
-          Gratis verzending vanaf €150 <ArrowUpRight size={12} />
+          Free shipping from €150 <ArrowUpRight size={12} />
         </span>
       </div>
       <header className="store-header" data-ready={ready}>
         <Link href="/" className="wordmark" aria-label="Studio MW home">
           <BrandLogo />
         </Link>
-        <nav aria-label="Hoofdnavigatie">
+        <nav aria-label="Main navigation">
           <Link href="/shop">Shop all</Link>
           <button onClick={() => filterGender("Men")}>Men</button>
           <button onClick={() => filterGender("Women")}>Women</button>
@@ -238,7 +238,7 @@ export default function Storefront({
           <a href="/#story">Our story</a>
         </nav>
         <div className="header-tools">
-          <button aria-label="Zoeken" onClick={() => setPanel("search")}>
+          <button aria-label="Search" onClick={() => setPanel("search")}>
             <Search size={19} />
           </button>
           <button
@@ -254,7 +254,7 @@ export default function Storefront({
           </button>
           <button
             className="bag-button"
-            aria-label="Winkelmand"
+            aria-label="Shopping bag"
             onClick={() => {
               setPanel("bag");
               setCheckout(false);
@@ -281,7 +281,7 @@ export default function Storefront({
               <img
                 className="hero-image"
                 src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=2400&q=90"
-                alt="Mode-editorial met een ontspannen stedelijke sfeer"
+                alt="Fashion editorial with a relaxed urban mood"
               />
               <div className="hero-shade" />
               <div className="hero-top">
@@ -310,9 +310,9 @@ export default function Storefront({
                 <span>For who you are becoming.</span>
               </h2>
               <p>
-                Een garderobe die met je meebeweegt. Onafhankelijke
-                kledinglijnen, verbonden door één visie: bewuste ontwerpen met
-                een eigen karakter.
+                A wardrobe that moves with you. Independent clothing lines,
+                connected by one vision: considered designs with a character of
+                their own.
               </p>
               <a href="#story">
                 Meet the collective <ArrowUpRight size={16} />
@@ -354,7 +354,7 @@ export default function Storefront({
             <label className="brand-select">
               Brand{" "}
               <select
-                aria-label="Filter kledinglijn"
+                aria-label="Filter clothing line"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
               >
@@ -372,7 +372,7 @@ export default function Storefront({
             category !== "All" ||
             brand !== "All") && (
             <div className="filter-summary">
-              {query && `Zoeken: ${query} · `}
+              {query && `Search:  ${query} · `}
               {gender !== "All" && `${gender} · `}
               {category !== "All" && `${category} · `}
               {brand !== "All" && `${brandName(brand)} · `}
@@ -386,7 +386,7 @@ export default function Storefront({
                   setWishOnly(false);
                 }}
               >
-                Wis filters ×
+                Clear filters ×
               </button>
             </div>
           )}
@@ -402,7 +402,7 @@ export default function Storefront({
                   </span>
                   <button
                     className="wish"
-                    aria-label={`Bewaar ${p.name}`}
+                    aria-label={`Save ${p.name}`}
                     onClick={() =>
                       setWish(
                         wish.includes(p.id)
@@ -434,15 +434,15 @@ export default function Storefront({
                 </div>
                 <div className="swatches">
                   <span>
-                    {new Set(p.variants.map((v) => v.color)).size} kleur(en) ·{" "}
-                    {new Set(p.variants.map((v) => v.size)).size} maten
+                    {new Set(p.variants.map((v) => v.color)).size} colour(s) ·{" "}
+                    {new Set(p.variants.map((v) => v.size)).size} sizes
                   </span>
                 </div>
               </article>
             ))}
           </div>
           {!list.length && (
-            <p className="empty">Geen items gevonden. Pas je filters aan.</p>
+            <p className="empty">No items found. Adjust your filters.</p>
           )}
         </section>
         {!shopOnly && (
@@ -454,9 +454,9 @@ export default function Storefront({
                   <h2>Meet the collective.</h2>
                 </div>
                 <p className="muted">
-                  Jouw stijl kent geen grenzen.
+                  Your style knows no limits.
                   <br />
-                  Onze collecties ook niet.
+                  Neither do our collections.
                 </p>
               </div>
               <div className="brand-grid">
@@ -490,7 +490,7 @@ export default function Storefront({
                     <img
                       loading="lazy"
                       src={`https://images.unsplash.com/${b.img}?auto=format&fit=crop&w=900&q=85`}
-                      alt={`Editorial voor ${brandName(b.name)}`}
+                      alt={`Editorial for ${brandName(b.name)}`}
                     />
                     <div>
                       <h3>{brandName(b.name)}</h3>
@@ -510,9 +510,9 @@ export default function Storefront({
                   take their time.
                 </h2>
                 <p>
-                  Een nieuwe expressie. Een volgend hoofdstuk.
+                  A new expression. A new chapter.
                   <br />
-                  Ontdek wat er aankomt bij het collective.
+                  Discover what is next for the collective.
                 </p>
                 {products
                   .filter((p) => !saleable(p, now || Date.now()))
@@ -542,12 +542,13 @@ export default function Storefront({
               </h2>
               <div>
                 <p>
-                  Studio MW begon met Willemijn en Max. Met ideeën aan de
-                  ontwerptafel en de ambitie om iets eigens op te bouwen.
+                  Studio MW began with Willemijn and Max. With ideas at the
+                  design table and the ambition to create something of their
+                  own.
                 </p>
                 <p>
-                  Verschillende kledinglijnen, één herkenbare visie. Dit is het
-                  begin van ons verhaal. En er is ruimte voor dat van jou.
+                  Different clothing lines, one recognisable vision. This is the
+                  start of our story. And there is room for yours.
                 </p>
                 <span>WILLEMIJN & MAX — THE FOUNDERS</span>
               </div>
@@ -576,17 +577,17 @@ export default function Storefront({
           </div>
           <div>
             <p>CLIENT SERVICES</p>
-            <Link href="/info/shipping">Verzending & retouren</Link>
+            <Link href="/info/shipping">Shipping & returns</Link>
             <Link href="/info/contact">Contact</Link>
             <Link href="/info/privacy">Privacy & cookies</Link>
-            <Link href="/info/terms">Voorwaarden (concept)</Link>
+            <Link href="/info/terms">Terms & conditions (draft)</Link>
           </div>
           <div>
             <p>THE FIRST CHAPTER</p>
             <span>
-              Ontwikkelomgeving met fictieve producten.
+              Test store with fictional products.
               <br />
-              Er worden geen echte betalingen verwerkt.
+              No real payments are processed.
             </span>
             <span className="demo-pill">DEMO ENVIRONMENT</span>
           </div>
@@ -605,10 +606,10 @@ export default function Storefront({
             aria-modal="true"
             aria-label={
               panel === "bag"
-                ? "Winkelmand"
+                ? "Shopping bag"
                 : panel === "menu"
                   ? "Menu"
-                  : "Zoeken"
+                  : "Search"
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -620,7 +621,7 @@ export default function Storefront({
                     ? "Find your next essential."
                     : "Explore"}
               </h2>
-              <button aria-label="Sluiten" onClick={() => setPanel(null)}>
+              <button aria-label="Close" onClick={() => setPanel(null)}>
                 <X />
               </button>
             </div>
@@ -635,7 +636,7 @@ export default function Storefront({
                 }}
               >
                 <label>
-                  Zoek op productnaam
+                  Search by product name
                   <input
                     autoFocus
                     value={query}
@@ -652,7 +653,7 @@ export default function Storefront({
                 <Link href="/shop" onClick={() => setPanel(null)}>
                   Shop all
                 </Link>
-                <button onClick={() => setPanel("search")}>Zoeken</button>
+                <button onClick={() => setPanel("search")}>Search</button>
                 <button
                   onClick={() => {
                     setWishOnly(true);
@@ -662,7 +663,7 @@ export default function Storefront({
                       ?.scrollIntoView({ behavior: "smooth" });
                   }}
                 >
-                  Favorieten
+                  Favourites
                 </button>
                 <button onClick={() => filterGender("Men")}>Men</button>
                 <button onClick={() => filterGender("Women")}>Women</button>
@@ -674,11 +675,11 @@ export default function Storefront({
             ) : confirmation ? (
               <div className="confirmation">
                 <Check size={40} />
-                <h3>Bedankt. Je demo-order staat klaar.</h3>
+                <h3>Thank you. Your demo order is confirmed.</h3>
                 <p>{confirmation.number}</p>
                 <b>{euro(confirmation.total)}</b>
                 <p>
-                  Er is geen geld afgeschreven. De order is opgeslagen in het
+                  No payment was taken. Your order has been saved in the
                   dashboard.
                 </p>
                 <button
@@ -688,15 +689,15 @@ export default function Storefront({
                     setConfirmation(null);
                   }}
                 >
-                  Verder ontdekken
+                  Continue exploring
                 </button>
               </div>
             ) : (
               <>
                 <p className="muted">
                   {subtotal >= 15000
-                    ? "Gratis verzending voor jouw bestelling."
-                    : `Nog ${euro(15000 - subtotal)} tot gratis verzending.`}
+                    ? "Your order qualifies for free shipping."
+                    : `${euro(15000 - subtotal)} away from free shipping.`}
                 </p>
                 <div className="shipping-progress">
                   <i style={{ width: Math.min(100, subtotal / 150) + "%" }} />
@@ -712,14 +713,14 @@ export default function Storefront({
                       <b>{euro(l.p.price)}</b>
                       <div className="quantity">
                         <button
-                          aria-label="Minder"
+                          aria-label="Decrease quantity"
                           onClick={() => update(l.sku, -1)}
                         >
                           <Minus size={12} />
                         </button>
                         <span>{l.quantity}</span>
                         <button
-                          aria-label="Meer"
+                          aria-label="Increase quantity"
                           disabled={l.quantity >= Math.min(20, l.v.stock)}
                           onClick={() => update(l.sku, 1)}
                         >
@@ -731,37 +732,39 @@ export default function Storefront({
                             setKey(crypto.randomUUID());
                           }}
                         >
-                          Verwijderen
+                          Remove
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
                 {!lines.length ? (
-                  <p className="empty">Je tas wacht op iets bijzonders.</p>
+                  <p className="empty">
+                    Your bag is waiting for something special.
+                  </p>
                 ) : (
                   <>
                     <div className="totals">
                       <p>
-                        <span>Subtotaal (incl. btw)</span>
+                        <span>Subtotal (incl. VAT)</span>
                         <b>{euro(subtotal)}</b>
                       </p>
                       <p>
-                        <span>Verzending</span>
+                        <span>Shipping</span>
                         <b>{euro(shipping)}</b>
                       </p>
                       <p>
-                        <span>Totaal</span>
+                        <span>Total</span>
                         <b>{euro(subtotal + shipping)}</b>
                       </p>
                     </div>
                     {checkout ? (
                       <form action={place} className="checkout-form">
                         <span className="demo-pill">
-                          DEMO CHECKOUT — GEEN BETALING
+                          DEMO CHECKOUT — NO PAYMENT
                         </span>
                         <label>
-                          Naam
+                          Name
                           <input
                             name="name"
                             required
@@ -771,7 +774,7 @@ export default function Storefront({
                           />
                         </label>
                         <label>
-                          E-mail
+                          Email
                           <input
                             name="email"
                             type="email"
@@ -780,7 +783,7 @@ export default function Storefront({
                           />
                         </label>
                         <label>
-                          Straat en huisnummer
+                          Street address
                           <input
                             name="address"
                             required
@@ -797,7 +800,7 @@ export default function Storefront({
                             />
                           </label>
                           <label>
-                            Plaats
+                            City
                             <input
                               name="city"
                               required
@@ -806,18 +809,17 @@ export default function Storefront({
                           </label>
                         </div>
                         <label>
-                          Land
+                          Country
                           <select name="country">
-                            <option>Nederland</option>
-                            <option>België</option>
+                            <option>Netherlands</option>
+                            <option>Belgium</option>
                           </select>
                         </label>
                         <p className="muted">
-                          Gebruik fictieve gegevens. Deze bestelling is
-                          uitsluitend een test.
+                          Use fictional details. This order is a test only.
                         </p>
                         <button className="button dark" disabled={busy}>
-                          {busy ? "Opslaan…" : "Demo-order plaatsen"}{" "}
+                          {busy ? "Saving…" : "Place demo order"}{" "}
                           <ArrowRight size={16} />
                         </button>
                       </form>
@@ -829,7 +831,7 @@ export default function Storefront({
                           setMessage("");
                         }}
                       >
-                        Naar demo-checkout <ArrowRight size={16} />
+                        Continue to demo checkout <ArrowRight size={16} />
                       </button>
                     )}
                   </>
@@ -858,7 +860,7 @@ export default function Storefront({
           >
             <button
               className="dialog-close"
-              aria-label="Sluiten"
+              aria-label="Close"
               onClick={() => setSelected(null)}
             >
               <X />
@@ -872,7 +874,7 @@ export default function Storefront({
               </p>
               <h2>{selected.name}</h2>
               <p className="detail-price">
-                {euro(selected.price)} <small>incl. btw</small>
+                {euro(selected.price)} <small>incl. VAT</small>
               </p>
               <p>{brandText(selected.description)}</p>
               {saleable(selected, now || Date.now()) ? (
@@ -880,9 +882,9 @@ export default function Storefront({
                   <p className="eyebrow">SELECT YOUR SIZE — {selectedColor}</p>
                   {new Set(selected.variants.map((v) => v.color)).size > 1 && (
                     <label>
-                      Kleur
+                      Colour
                       <select
-                        aria-label="Kleur"
+                        aria-label="Colour"
                         value={selectedColor}
                         onChange={(e) => {
                           setColor(e.target.value);
@@ -917,7 +919,7 @@ export default function Storefront({
                     Add to bag <Plus size={18} />
                   </button>
                   <p className="muted">
-                    Gratis verzending vanaf €150 · Fictief demo-artikel
+                    Free shipping from €150 · Fictional demo item
                   </p>
                 </>
               ) : (
@@ -930,11 +932,11 @@ export default function Storefront({
                   <h3>
                     {selected.releaseAt && now
                       ? `${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 86400000))}D ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 3600000) % 24)}H ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 60000) % 60)}M`
-                      : "Binnenkort"}
+                      : "Coming soon"}
                   </h3>
                   <form action={wait}>
                     <label>
-                      E-mailadres
+                      Email address
                       <input
                         name="email"
                         type="email"
@@ -943,8 +945,8 @@ export default function Storefront({
                       />
                     </label>
                     <label className="check-label">
-                      <input name="consent" type="checkbox" required /> Bewaar
-                      mijn e-mailadres voor deze demo-wachtlijst.
+                      <input name="consent" type="checkbox" required /> Store my
+                      email address for this demo waitlist.
                     </label>
                     <button className="button dark full" disabled={busy}>
                       Join the waitlist <ArrowUpRight size={17} />
@@ -958,18 +960,18 @@ export default function Storefront({
                 </p>
               )}
               <details>
-                <summary>Details & verzorging</summary>
+                <summary>Details & care</summary>
                 <p>
-                  Productdetails en wasvoorschriften worden vóór livegang
-                  aangevuld. Materiaal- en duurzaamheidsclaims zijn nog niet
-                  geverifieerd.
+                  Product details and care instructions will be added before
+                  launch. Material and sustainability claims have not been
+                  verified yet.
                 </p>
               </details>
               <details>
-                <summary>Verzending & retouren</summary>
+                <summary>Shipping & returns</summary>
                 <p>
-                  Dit is een ontwikkelomgeving. Er worden geen fysieke producten
-                  geleverd. Het definitieve retourbeleid volgt vóór livegang.
+                  This is a test store. No physical products are delivered. The
+                  final returns policy will be added before launch.
                 </p>
               </details>
             </div>
