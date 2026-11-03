@@ -52,9 +52,12 @@ export default function Storefront({
     } | null>(null),
     [key, setKey] = useState(""),
     [now, setNow] = useState(0);
-  useModal(Boolean(panel || selected), () => {
+  const isProductPage = Boolean(selectedId);
+  const [photo, setPhoto] = useState(0);
+  const [sort, setSort] = useState("featured");
+  useModal(Boolean(panel || (selected && !isProductPage)), () => {
     setPanel(null);
-    setSelected(null);
+    if (!isProductPage) setSelected(null);
   });
   useEffect(() => {
     try {
@@ -94,11 +97,21 @@ export default function Storefront({
     shipping = subtotal >= 15000 ? 0 : 495;
   const list = products.filter(
     (p) =>
+      p.id !== selectedId &&
       (brand === "All" || p.brand === brand) &&
       (category === "All" || p.category === category) &&
       (gender === "All" || p.gender === gender || p.gender === "Unisex") &&
-      p.name.toLowerCase().includes(query.toLowerCase()) &&
+      p.name.toLowerCase().includes(query.trim().toLowerCase()) &&
       (!wishOnly || wish.includes(p.id)),
+  );
+  list.sort((a, b) =>
+    sort === "price-low"
+      ? a.price - b.price
+      : sort === "price-high"
+        ? b.price - a.price
+        : sort === "name"
+          ? a.name.localeCompare(b.name)
+          : 0,
   );
   const upcomingProducts = products.filter(
     (p) => !saleable(p, now || Date.now()),
@@ -106,6 +119,7 @@ export default function Storefront({
   const selectedColor = color || selected?.variants[0]?.color || "";
   function open(p: Product) {
     setSelected(p);
+    setPhoto(0);
     setSize("");
     setColor(p.variants[0]?.color || "");
     setMessage("");
@@ -131,7 +145,7 @@ export default function Storefront({
     );
     setKey(crypto.randomUUID());
     setMessage("");
-    setSelected(null);
+    if (!isProductPage) setSelected(null);
     setPanel("bag");
     setCheckout(false);
   }
@@ -213,10 +227,234 @@ export default function Storefront({
           ? "You have joined the demo waitlist. Email notifications are not connected yet."
           : d.error,
       );
+    } catch {
+      setMessage("We could not save your request. Please try again.");
     } finally {
       setBusy(false);
     }
   }
+  function renderProduct() {
+    if (!selected) return null;
+    const photos = [
+      { url: selected.image, alt: selected.name },
+      ...(selected.gallery || []),
+    ];
+    const activePhoto = photos[photo] || photos[0];
+    const soldOut = !selected.variants.some((v) => v.stock > 0);
+    return (
+      <div
+        className={
+          isProductPage ? "product-page section" : "overlay product-overlay"
+        }
+        onClick={() => {
+          if (!isProductPage) setSelected(null);
+        }}
+      >
+        <section
+          className="product-dialog"
+          role={isProductPage ? undefined : "dialog"}
+          aria-modal={isProductPage ? undefined : true}
+          aria-label={selected.name}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {!isProductPage && (
+            <button
+              className="dialog-close"
+              aria-label="Close"
+              onClick={() => {
+                if (!isProductPage) setSelected(null);
+              }}
+            >
+              <X />
+            </button>
+          )}
+          <div className="detail-image">
+            <img
+              className="active-product-photo"
+              src={activePhoto.url}
+              alt={activePhoto.alt}
+            />
+            {photos.length > 1 && (
+              <div
+                className="gallery-thumbnails"
+                aria-label="Product photographs"
+              >
+                {photos.map((image, i) => (
+                  <button
+                    key={i}
+                    aria-label={`View photograph ${i + 1}: ${image.alt}`}
+                    aria-pressed={photo === i}
+                    onClick={() => setPhoto(i)}
+                  >
+                    <img src={image.url} alt="" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="detail-copy">
+            <p className="eyebrow">
+              {brandName(selected.brand)} / THE FIRST EDITION
+            </p>
+            {isProductPage && (
+              <Link className="product-breadcrumb" href="/shop">
+                Collection / {brandName(selected.brand)}
+              </Link>
+            )}
+            {isProductPage ? (
+              <h1>{selected.name}</h1>
+            ) : (
+              <h2>{selected.name}</h2>
+            )}
+            <p className="detail-price">
+              {euro(selected.price)} <small>incl. VAT</small>
+            </p>
+            <p>{brandText(selected.description)}</p>
+            {saleable(selected, now || Date.now()) ? (
+              <>
+                <p className="eyebrow">SELECT YOUR SIZE — {selectedColor}</p>
+                {new Set(selected.variants.map((v) => v.color)).size > 1 && (
+                  <label>
+                    Colour
+                    <select
+                      aria-label="Colour"
+                      value={selectedColor}
+                      onChange={(e) => {
+                        setColor(e.target.value);
+                        setSize("");
+                        setMessage("");
+                      }}
+                    >
+                      {Array.from(
+                        new Set(selected.variants.map((v) => v.color)),
+                      ).map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <div className="sizes">
+                  {selected.variants
+                    .filter((v) => v.color === selectedColor)
+                    .map((v) => (
+                      <button
+                        key={v.sku}
+                        disabled={!v.stock}
+                        className={size === v.sku ? "active" : ""}
+                        aria-pressed={size === v.sku}
+                        onClick={() => {
+                          setSize(v.sku);
+                          setMessage("");
+                        }}
+                      >
+                        {v.size}
+                        {!v.stock && " ×"}
+                      </button>
+                    ))}
+                </div>
+                <button
+                  className="button dark full"
+                  onClick={add}
+                  disabled={soldOut}
+                >
+                  {soldOut ? "Sold out" : "Add to bag"} <Plus size={18} />
+                </button>
+                <p className="muted">
+                  {selected.price >= 15000
+                    ? "Free shipping on this item"
+                    : "Shipping €4.95 · Free from €150"}{" "}
+                  · Test store
+                </p>
+              </>
+            ) : (
+              <div className="waitlist">
+                <p className="eyebrow">COMING SOON</p>
+                <p>
+                  {selected.releaseAt && date(selected.releaseAt)} ·
+                  Europe/Amsterdam
+                </p>
+                <h3>
+                  {selected.releaseAt && now
+                    ? `${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 86400000))}D ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 3600000) % 24)}H ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 60000) % 60)}M`
+                    : "Coming soon"}
+                </h3>
+                <form action={wait}>
+                  <label>
+                    Email address
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label className="check-label">
+                    <input name="consent" type="checkbox" required /> Store my
+                    email address for this demo waitlist.
+                  </label>
+                  <button className="button dark full" disabled={busy}>
+                    Join the waitlist <ArrowUpRight size={17} />
+                  </button>
+                </form>
+              </div>
+            )}
+            {message && (
+              <p className="notice" role="status">
+                {message}
+              </p>
+            )}
+            {selected.sizeGuide && (
+              <details className="size-guide">
+                <summary>Size guide</summary>
+                <p>{selected.sizeGuide}</p>
+              </details>
+            )}
+            <details>
+              <summary>Details & care</summary>
+              {selected.material && (
+                <p>
+                  <strong>Material</strong>
+                  <br />
+                  {selected.material}
+                </p>
+              )}
+              {selected.fit && (
+                <p>
+                  <strong>Fit</strong>
+                  <br />
+                  {selected.fit}
+                </p>
+              )}
+              {selected.care && (
+                <p>
+                  <strong>Care</strong>
+                  <br />
+                  {selected.care}
+                </p>
+              )}
+              {!selected.material && !selected.fit && !selected.care && (
+                <p>
+                  Product details are being prepared. This item is a
+                  demonstration and is not available for real purchase.
+                </p>
+              )}
+            </details>
+            <details>
+              <summary>Shipping & returns</summary>
+              <p>
+                This is a test store. No physical products are delivered. The
+                final returns policy will be added before launch.
+              </p>
+              <Link className="text-link" href="/info/shipping">
+                Read shipping & returns ↗
+              </Link>
+            </details>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <>
       <a className="skip" href="#main">
@@ -279,7 +517,8 @@ export default function Storefront({
         </div>
       </header>
       <main id="main">
-        {!shopOnly && (
+        {isProductPage && renderProduct()}
+        {!shopOnly && !isProductPage && (
           <>
             <section className="hero">
               <img
@@ -318,7 +557,9 @@ export default function Storefront({
                   ? "Your favourites"
                   : shopOnly
                     ? "The collection"
-                    : "Everyday, redefined."}
+                    : isProductPage
+                      ? "Discover more pieces."
+                      : "Everyday, redefined."}
               </h2>
             </div>
             <Link href="/shop" className="text-link">
@@ -339,6 +580,19 @@ export default function Storefront({
                 ),
               )}
             </div>
+            <label className="brand-select">
+              Sort{" "}
+              <select
+                aria-label="Sort products"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="featured">Featured</option>
+                <option value="price-low">Price: low to high</option>
+                <option value="price-high">Price: high to low</option>
+                <option value="name">Name: A–Z</option>
+              </select>
+            </label>
             <label className="brand-select">
               Brand{" "}
               <select
@@ -391,6 +645,7 @@ export default function Storefront({
                   <button
                     className="wish"
                     aria-label={`Save ${p.name}`}
+                    aria-pressed={wish.includes(p.id)}
                     onClick={() =>
                       setWish(
                         wish.includes(p.id)
@@ -404,9 +659,15 @@ export default function Storefront({
                       fill={wish.includes(p.id) ? "currentColor" : "none"}
                     />
                   </button>
-                  <button className="quick-add" onClick={() => open(p)}>
-                    Discover piece <Plus size={16} />
-                  </button>
+                  {isProductPage ? (
+                    <Link className="quick-add" href={"/products/" + p.slug}>
+                      View piece <ArrowUpRight size={16} />
+                    </Link>
+                  ) : (
+                    <button className="quick-add" onClick={() => open(p)}>
+                      Discover piece <Plus size={16} />
+                    </button>
+                  )}
                 </div>
                 <div className="product-meta">
                   <div>
@@ -439,7 +700,7 @@ export default function Storefront({
             <p className="empty">No items found. Adjust your filters.</p>
           )}
         </section>
-        {!shopOnly && (
+        {!shopOnly && !isProductPage && (
           <>
             <section className="manifesto">
               <p className="eyebrow">DIFFERENT EXPRESSIONS. ONE COLLECTIVE.</p>
@@ -581,9 +842,6 @@ export default function Storefront({
             <Link href="/shop">Shop all</Link>
             <a href="/#brands">The collective</a>
             <a href="/#story">Our story</a>
-            <Link href="/admin">
-              Studio dashboard <ArrowUpRight size={12} />
-            </Link>
           </div>
           <div>
             <p>CLIENT SERVICES</p>
@@ -680,7 +938,6 @@ export default function Storefront({
                 <a href="/#brands" onClick={() => setPanel(null)}>
                   The collective
                 </a>
-                <Link href="/admin">Studio dashboard</Link>
               </div>
             ) : confirmation ? (
               <div className="confirmation">
@@ -856,141 +1113,7 @@ export default function Storefront({
           </section>
         </div>
       )}
-      {selected && (
-        <div
-          className="overlay product-overlay"
-          onClick={() => setSelected(null)}
-        >
-          <section
-            className="product-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label={selected.name}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="dialog-close"
-              aria-label="Close"
-              onClick={() => setSelected(null)}
-            >
-              <X />
-            </button>
-            <div className="detail-image">
-              <img src={selected.image} alt={selected.name} />
-            </div>
-            <div className="detail-copy">
-              <p className="eyebrow">
-                {brandName(selected.brand)} / THE FIRST EDITION
-              </p>
-              <h2>{selected.name}</h2>
-              <p className="detail-price">
-                {euro(selected.price)} <small>incl. VAT</small>
-              </p>
-              <p>{brandText(selected.description)}</p>
-              {saleable(selected, now || Date.now()) ? (
-                <>
-                  <p className="eyebrow">SELECT YOUR SIZE — {selectedColor}</p>
-                  {new Set(selected.variants.map((v) => v.color)).size > 1 && (
-                    <label>
-                      Colour
-                      <select
-                        aria-label="Colour"
-                        value={selectedColor}
-                        onChange={(e) => {
-                          setColor(e.target.value);
-                          setSize("");
-                          setMessage("");
-                        }}
-                      >
-                        {Array.from(
-                          new Set(selected.variants.map((v) => v.color)),
-                        ).map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <div className="sizes">
-                    {selected.variants
-                      .filter((v) => v.color === selectedColor)
-                      .map((v) => (
-                        <button
-                          key={v.sku}
-                          disabled={!v.stock}
-                          className={size === v.sku ? "active" : ""}
-                          onClick={() => {
-                            setSize(v.sku);
-                            setMessage("");
-                          }}
-                        >
-                          {v.size}
-                          {!v.stock && " ×"}
-                        </button>
-                      ))}
-                  </div>
-                  <button className="button dark full" onClick={add}>
-                    Add to bag <Plus size={18} />
-                  </button>
-                  <p className="muted">
-                    Free shipping from €150 · Fictional demo item
-                  </p>
-                </>
-              ) : (
-                <div className="waitlist">
-                  <p className="eyebrow">COMING SOON</p>
-                  <p>
-                    {selected.releaseAt && date(selected.releaseAt)} ·
-                    Europe/Amsterdam
-                  </p>
-                  <h3>
-                    {selected.releaseAt && now
-                      ? `${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 86400000))}D ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 3600000) % 24)}H ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 60000) % 60)}M`
-                      : "Coming soon"}
-                  </h3>
-                  <form action={wait}>
-                    <label>
-                      Email address
-                      <input
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="you@example.com"
-                      />
-                    </label>
-                    <label className="check-label">
-                      <input name="consent" type="checkbox" required /> Store my
-                      email address for this demo waitlist.
-                    </label>
-                    <button className="button dark full" disabled={busy}>
-                      Join the waitlist <ArrowUpRight size={17} />
-                    </button>
-                  </form>
-                </div>
-              )}
-              {message && (
-                <p className="notice" role="status">
-                  {message}
-                </p>
-              )}
-              <details>
-                <summary>Details & care</summary>
-                <p>
-                  Product details and care instructions will be added before
-                  launch. Material and sustainability claims have not been
-                  verified yet.
-                </p>
-              </details>
-              <details>
-                <summary>Shipping & returns</summary>
-                <p>
-                  This is a test store. No physical products are delivered. The
-                  final returns policy will be added before launch.
-                </p>
-              </details>
-            </div>
-          </section>
-        </div>
-      )}
+      {!isProductPage && renderProduct()}
     </>
   );
 }

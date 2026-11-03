@@ -23,6 +23,7 @@ import {
 import { Product, ProductInput, Order, euro, date } from "@/lib/model";
 import { useModal } from "./use-modal";
 import type { Staff } from "@/lib/auth";
+import { productReadiness } from "@/lib/product-readiness";
 const statusLabels: Record<string, string> = {
   draft: "Draft",
   review: "Awaiting review",
@@ -1035,9 +1036,9 @@ export default function Admin({
                 picker will follow later.
               </p>
               <label>
-                Image (images.unsplash.com URL)
+                Primary image
                 <input
-                  type="url"
+                  type="text"
                   required
                   value={editor.image}
                   onChange={(e) =>
@@ -1045,6 +1046,115 @@ export default function Admin({
                   }
                 />
               </label>
+              <p className="muted">
+                Use your own /products/ image path or a public Supabase Storage
+                URL. Unsplash remains available for demos. Upload only
+                photographs you have permission to use.
+              </p>
+              <fieldset className="product-content-fields">
+                <legend>Product information</legend>
+                {(
+                  [
+                    ["material", "Material composition", 2000],
+                    ["fit", "Fit information", 2000],
+                    ["care", "Care instructions", 2000],
+                    ["sizeGuide", "Size guide", 4000],
+                  ] as const
+                ).map(([field, label, max]) => (
+                  <label key={field}>
+                    {label}
+                    <textarea
+                      rows={3}
+                      maxLength={max}
+                      value={editor[field] || ""}
+                      onChange={(e) =>
+                        setEditor({ ...editor, [field]: e.target.value })
+                      }
+                    />
+                  </label>
+                ))}
+              </fieldset>
+              <fieldset className="product-content-fields">
+                <legend>Additional photographs</legend>
+                {(editor.gallery || []).map((image, i) => (
+                  <div className="gallery-editor" key={i}>
+                    <label>
+                      Image {i + 1} URL
+                      <input
+                        required
+                        value={image.url}
+                        onChange={(e) =>
+                          setEditor({
+                            ...editor,
+                            gallery: editor.gallery!.map((g, n) =>
+                              n === i ? { ...g, url: e.target.value } : g,
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Image {i + 1} description
+                      <input
+                        required
+                        maxLength={200}
+                        value={image.alt}
+                        onChange={(e) =>
+                          setEditor({
+                            ...editor,
+                            gallery: editor.gallery!.map((g, n) =>
+                              n === i ? { ...g, alt: e.target.value } : g,
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() =>
+                        setEditor({
+                          ...editor,
+                          gallery: editor.gallery!.filter((_, n) => n !== i),
+                        })
+                      }
+                    >
+                      Remove image {i + 1}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="text-link"
+                  disabled={(editor.gallery?.length || 0) >= 8}
+                  onClick={() =>
+                    setEditor({
+                      ...editor,
+                      gallery: [
+                        ...(editor.gallery || []),
+                        { url: "", alt: "" },
+                      ],
+                    })
+                  }
+                >
+                  Add photograph +
+                </button>
+              </fieldset>
+              <aside className="product-readiness">
+                <h3>Content readiness</h3>
+                <p>
+                  Complete these before real sales. Photograph accuracy and
+                  claims still need your review.
+                </p>
+                <ul>
+                  {productReadiness(editor).map((item) => (
+                    <li key={item.label}>
+                      <span aria-hidden="true">{item.ready ? "✓" : "○"}</span>{" "}
+                      {item.label}: {item.ready ? "Added" : "Missing"}
+                    </li>
+                  ))}
+                </ul>
+              </aside>
               <h3>Variants & stock</h3>
               <div className="variant-labels">
                 <span>Size</span>

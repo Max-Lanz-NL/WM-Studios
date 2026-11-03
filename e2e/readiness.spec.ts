@@ -45,11 +45,11 @@ test("productlinks zijn deelbaar en shopverwijzingen bereiken de homepage", asyn
     .click();
   await expect(page).toHaveURL(/\/products\/the-essential-tee$/);
   await expect(
-    page.getByRole("dialog", { name: "The Essential Tee" }),
+    page.getByRole("heading", { level: 1, name: "The Essential Tee" }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("dialog", { name: "The Essential Tee" }),
+    page.getByRole("heading", { level: 1, name: "The Essential Tee" }),
   ).toBeVisible();
 });
 
@@ -101,7 +101,6 @@ test("kleurkeuze en voorraad begrenzen de winkelmand voor checkout", async ({
     page.getByRole("button", { name: "Increase quantity", exact: true }),
   ).toBeDisabled();
   await page.reload();
-  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByRole("button", { name: "Shopping bag", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Increase quantity", exact: true }),
@@ -264,4 +263,75 @@ test("products come before the brand story and empty upcoming releases disappear
     });
     expect(restore.ok()).toBe(true);
   }
+});
+
+test("product page has usable photographs, sizing and stable bag navigation", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/products/the-essential-tee");
+  await expect(page).toHaveTitle("The Essential Tee | Studio MW");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "The Essential Tee" }),
+  ).toBeVisible();
+  await expect(page.locator('[role="dialog"]')).toHaveCount(0);
+  await page
+    .getByRole("button", {
+      name: "View photograph 2: Test fixture reverse view",
+    })
+    .click();
+  await expect(page.locator(".active-product-photo")).toHaveAttribute(
+    "alt",
+    "Test fixture reverse view",
+  );
+  await page.getByText("Size guide", { exact: true }).click();
+  await expect(
+    page.getByText("Test fixture measurements: M — chest 104 cm"),
+  ).toBeVisible();
+  await page.getByText("Details & care", { exact: true }).click();
+  await expect(page.getByText("Test fixture cotton composition")).toBeVisible();
+  await page.getByRole("button", { name: "M", exact: true }).click();
+  await page.getByRole("button", { name: "Add to bag", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Shopping bag" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "The Essential Tee" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "test-results/product-page-mobile.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("link", { name: "Off Duty Hoodie", exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Off Duty Hoodie" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "The Essential Tee" }),
+  ).toHaveCount(0);
+});
+
+test("collection sorting keeps prices in order and favourites expose selection", async ({
+  page,
+}) => {
+  await page.goto("/shop");
+  await page.getByLabel("Sort products").selectOption("price-high");
+  const prices = await page.locator(".product-meta > b").allTextContents();
+  const numeric = prices.map((p) => Number(p.replace(/[^0-9.]/g, "")));
+  expect(numeric).toEqual([...numeric].sort((a, b) => b - a));
+  const save = page.getByRole("button", {
+    name: "Save The Essential Tee",
+    exact: true,
+  });
+  await save.click();
+  await expect(save).toHaveAttribute("aria-pressed", "true");
 });

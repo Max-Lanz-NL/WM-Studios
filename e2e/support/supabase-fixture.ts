@@ -9,6 +9,16 @@ for (const p of [
   product({
     name: "The Essential Tee",
     slug: "the-essential-tee",
+    material: "Test fixture cotton composition",
+    fit: "Test fixture relaxed fit",
+    care: "Test fixture care instructions",
+    sizeGuide: "Test fixture measurements: M — chest 104 cm",
+    gallery: [
+      {
+        url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?fit=crop&w=900",
+        alt: "Test fixture reverse view",
+      },
+    ],
     variants: ["XS", "S", "M", "L", "XL"].map((size) => ({
       size,
       color: "Off white",

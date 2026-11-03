@@ -12,7 +12,7 @@ const pages: Record<string, { title: string; text: string }> = {
   },
   privacy: {
     title: "Privacy & cookies — draft",
-    text: "This demo stores your bag and favourites locally in your browser. A strictly necessary cookie secures staff sessions. No marketing cookies are set. Product images are loaded from Unsplash, which connects your browser to that external service. Test orders and waitlist entries are stored centrally in Studio MW's Supabase database. Vercel hosts this test version. Use fictional details. A final privacy notice with retention periods and contact details must be prepared before launch.",
+    text: "This demo stores your bag and favourites locally in your browser. A strictly necessary cookie secures staff sessions. No marketing cookies are set. Product images may be loaded from Unsplash or public Supabase Storage, connecting your browser to the corresponding service. Test orders and waitlist entries are stored centrally in Studio MW's Supabase database. Vercel hosts this test version. Use fictional details. A final privacy notice with retention periods and contact details must be prepared before launch.",
   },
   terms: {
     title: "Terms & conditions — draft",

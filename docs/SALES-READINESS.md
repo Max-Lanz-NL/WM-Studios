@@ -45,3 +45,6 @@ Bronnen: https://vercel.com/docs/plans/hobby en https://supabase.com/docs/guides
 
 ## Controle van deze verbeteringen
 28 oktober 2026: 39 unit-/SQL-/configuratietests en 9 lokale browsertests geslaagd. De browsercontroles gebruiken een tijdelijke Auth/Data API-fixture met PostgreSQL/RLS; dit is geen vervanging van de afzonderlijke echte Supabase-acceptatie. Nieuw gecontroleerd: mobiel zoeken/favorieten/kledinglijnfilter, deelbare productlinks, kleurselectie bij gelijke maat en voorraadbegrenzing na herladen. Bestaande checkout, orderverwerking, conceptproduct opslaan, CSRF en laatste-artikel-concurrency blijven slagen. De eerste kleurtest vond een onvolledig expliciet formulierlabel; dit is gecorrigeerd en de volledige browsersuite is daarna opnieuw geslaagd.
+
+## Update 3 november 2026
+De verkoopvoorbereiding is uitgebreid met echte productinformatievelden, ondersteuning voor eigen foto-URL's, galerijen, een zelfstandige productpagina, sorteermogelijkheden en een inhoudschecklist in het beheer. Zie LAUNCH-PREPARATION.md voor bediening, testbewijs en de resterende blokkades. De gebruiker heeft opnieuw bevestigd dat er nog geen echte producten, foto's en betaalprovider zijn: uitsluitend verder verkoopklaar maken. Echte verkoop blijft uitgeschakeld.

@@ -158,6 +158,21 @@ test("producteditor slaat een nieuw concept op", async ({ page }) => {
   await page
     .getByLabel("Product name", { exact: true })
     .fill("Test Studio " + Date.now());
+  await page
+    .getByLabel("Material composition", { exact: true })
+    .fill("Test composition");
+  await page.getByLabel("Fit information", { exact: true }).fill("Test fit");
+  await page.getByLabel("Care instructions", { exact: true }).fill("Test care");
+  await page.getByLabel("Size guide", { exact: true }).fill("Test sizing");
+  await page
+    .getByRole("button", { name: "Add photograph +", exact: true })
+    .click();
+  await page
+    .getByLabel("Image 1 URL", { exact: true })
+    .fill("/products/test-back.webp");
+  await page
+    .getByLabel("Image 1 description", { exact: true })
+    .fill("Test reverse view");
   for (let i = 1; i <= 3; i++)
     await page
       .getByLabel(`sku variant ${i}`, { exact: true })
