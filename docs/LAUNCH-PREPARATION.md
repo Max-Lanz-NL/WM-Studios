@@ -34,3 +34,6 @@ APP_ENV blijft staging; echte betalingen en indexering blijven uit. De testlink 
 46 unit-/PostgreSQL-/configuratietests geslaagd. 15 lokale browsertests geslaagd: checkout, laatste-artikelcontrole, rechten, producteditor inclusief nieuwe inhoud/foto's, productpagina, gallery, maatinformatie, kleur/voorraad, mobiel, sorteren en favorieten. Build en TypeScript geslaagd. Lokale Auth/Data API-fixture gebruikt de echte migratie-SQL en RLS, maar vervangt geen acceptatie van betalingen of e-mail. Online catalogus en veiligheidsinstellingen apart gecontroleerd.
 
 Documentatie voor RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
+
+## Aanvullende websitecontrole 3 november 2026
+Zie FULL-SHOP-AUDIT-2026-11-03.md: centraal bewerkbare servicepagina's en FAQ, herstel van verloren demobevestigingen, robuuste winkelmandopslag, verbeterde toetsenbordbediening, Engelse beheerlabels en een overzicht van ontbrekende inhoud. Geen nieuwe schemawijziging vereist. De bestaande home-contentrij kan nu een optioneel services-object bevatten; oudere homepageverzoeken behouden dit object.

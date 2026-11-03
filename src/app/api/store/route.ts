@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { checkout, joinWaitlist } from "@/lib/db";
+import { checkout, joinWaitlist, checkoutReceipt } from "@/lib/db";
 import { rateLimit, sameOrigin } from "@/lib/auth";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const b = await request.json();
+    if (b.action === "checkout_status") {
+      await rateLimit("checkout-status", 60);
+      const key = z.uuid().parse(b.key);
+      return NextResponse.json(
+        { receipt: await checkoutReceipt(key) },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     if (b.action === "checkout") {
       await rateLimit("checkout", 60);
       const input = z

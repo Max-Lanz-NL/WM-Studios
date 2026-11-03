@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { publicClient, sessionClient, serviceClient } from "./supabase";
 import type { Product, ProductInput, Order } from "./model";
 import { englishDatabaseMessage } from "./english-copy";
+import type { HomeContent } from "./shop-content";
 function fail(error: { message: string; code?: string } | null) {
   if (!error) return;
   if (error.code === "P0001")
@@ -45,7 +46,7 @@ export async function home() {
     .eq("id", "home")
     .single();
   fail(error);
-  return data!.body as { headline: string; subtitle: string };
+  return data!.body as HomeContent;
 }
 export async function saveProduct(input: ProductInput, id?: string) {
   const client = await sessionClient();
@@ -99,4 +100,18 @@ export async function checkout(input: CheckoutInput) {
   });
   fail(error);
   return data as { id: string; number: string; total: number; status: string };
+}
+/** The unguessable checkout key is a receipt capability; return no customer data. */
+export async function checkoutReceipt(key: string) {
+  const { data, error } = await serviceClient()
+    .from("orders")
+    .select("number,total_cents")
+    .eq("idempotency_key", key)
+    .eq("is_test", true)
+    .eq("payment_status", "paid_demo")
+    .maybeSingle();
+  fail(error);
+  return data
+    ? { number: data.number as string, total: data.total_cents as number }
+    : null;
 }

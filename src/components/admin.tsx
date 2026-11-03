@@ -24,6 +24,7 @@ import { Product, ProductInput, Order, euro, date } from "@/lib/model";
 import { useModal } from "./use-modal";
 import type { Staff } from "@/lib/auth";
 import { productReadiness } from "@/lib/product-readiness";
+import { serviceFields, type HomeContent } from "@/lib/shop-content";
 const statusLabels: Record<string, string> = {
   draft: "Draft",
   review: "Awaiting review",
@@ -68,7 +69,7 @@ export default function Admin({
   authorized: boolean;
   products: Product[];
   orders: Order[];
-  content: { headline: string; subtitle: string };
+  content: HomeContent;
   waitlist: number;
   staff: Staff | null;
 }) {
@@ -84,6 +85,7 @@ export default function Admin({
     [busy, setBusy] = useState(false),
     [mobile, setMobile] = useState(false),
     [home, setHome] = useState({
+      services: content.services || {},
       headline: brandText(content.headline),
       subtitle: brandText(content.subtitle),
     });
@@ -100,12 +102,20 @@ export default function Admin({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const d = await res.json();
+      const d = await res.json().catch(() => {
+        throw new Error(
+          "The studio returned an unexpected response. Please try again.",
+        );
+      });
       if (!res.ok) throw new Error(d.error);
       router.refresh();
       return true;
     } catch (e) {
-      setMessage((e as Error).message);
+      setMessage(
+        e instanceof TypeError
+          ? "The studio could not be reached. Check your connection and try again."
+          : (e as Error).message,
+      );
       return false;
     } finally {
       setBusy(false);
@@ -174,7 +184,10 @@ export default function Admin({
         </aside>
       </main>
     );
-  const total = orders.reduce((n, o) => n + o.total, 0),
+  const paidOrders = orders.filter((o) =>
+    ["paid_demo", "paid", "packed", "shipped"].includes(o.status),
+  );
+  const total = paidOrders.reduce((n, o) => n + o.total, 0),
     low = products.flatMap((p) =>
       p.variants
         .filter((v) => v.stock < 5)
@@ -221,7 +234,7 @@ export default function Admin({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "wm-demo-orders.csv";
+    a.download = "studio-mw-demo-orders.csv";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -387,7 +400,7 @@ export default function Admin({
                     {Array.from({ length: 7 }, (_, i) => {
                       const day = new Date();
                       day.setDate(day.getDate() - 6 + i);
-                      const amount = orders
+                      const amount = paidOrders
                         .filter(
                           (o) =>
                             new Date(o.createdAt).toLocaleDateString("en-GB", {
@@ -616,7 +629,7 @@ export default function Admin({
                       }}
                       className="text-link"
                     >
-                      Bekijken ↗
+                      View ↗
                     </button>
                   </div>
                 ))}
@@ -629,12 +642,12 @@ export default function Admin({
                 <div>
                   <h2>All orders</h2>
                   <p>
-                    {orders.length} demo-orders · prijzen als historische
+                    {orders.length} demo orders · prices saved as historical
                     snapshots
                   </p>
                 </div>
                 <button className="text-link" onClick={exportOrders}>
-                  Exporteer CSV ↗
+                  Export CSV ↗
                 </button>
               </div>
               {!orders.length ? (
@@ -643,7 +656,7 @@ export default function Admin({
                   <h3>Your first order will appear here.</h3>
                   <p>Place a demo order in the store to test the workflow.</p>
                   <Link className="button dark" href="/">
-                    Open webshop ↗
+                    Open store ↗
                   </Link>
                 </div>
               ) : (
@@ -733,7 +746,7 @@ export default function Admin({
                             <button
                               onClick={() => setEditor(structuredClone(p))}
                             >
-                              Aanpassen ↗
+                              Edit ↗
                             </button>
                           </td>
                         </tr>
@@ -775,19 +788,99 @@ export default function Admin({
                     }
                   />
                 </label>
+                <fieldset className="product-content-fields">
+                  <legend>Customer service & business information</legend>
+                  <p className="muted">
+                    These fields appear publicly on the service pages. Add
+                    business information only. Keep passwords, payment details
+                    and API keys out. Legal notices remain drafts while the
+                    store is in test mode.
+                  </p>
+                  {serviceFields.map(([field, label, max]) => (
+                    <label key={field}>
+                      {label}
+                      {field === "contactEmail" ? (
+                        <input
+                          type="email"
+                          maxLength={max}
+                          value={home.services[field] || ""}
+                          onChange={(e) =>
+                            setHome({
+                              ...home,
+                              services: {
+                                ...home.services,
+                                [field]: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      ) : (
+                        <textarea
+                          rows={
+                            field === "privacy" || field === "terms" ? 6 : 3
+                          }
+                          maxLength={max}
+                          value={home.services[field] || ""}
+                          onChange={(e) =>
+                            setHome({
+                              ...home,
+                              services: {
+                                ...home.services,
+                                [field]: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      )}
+                    </label>
+                  ))}
+                </fieldset>
                 <button className="button dark" disabled={busy}>
                   Save changes <Check size={16} />
                 </button>
               </form>
               <p className="muted">
-                This first content editor manages the homepage headline and
-                introduction. Sections, media and version history will follow
-                later.
+                Manage the homepage and customer service pages here. Changes are
+                saved centrally. Review all public wording before real sales.
               </p>
             </section>
           )}
           {tab === "Settings" && (
             <section className="admin-card">
+              <div className="product-readiness">
+                <h2>Before real sales</h2>
+                <p>
+                  Test mode is active. Complete the catalogue and service
+                  information, then connect and accept payments, order emails,
+                  delivery and the live environment.
+                </p>
+                {staff?.permissions.includes("catalog.write") && (
+                  <p>
+                    {
+                      products.filter((p) =>
+                        productReadiness(p).every((item) => item.ready),
+                      ).length
+                    }{" "}
+                    of {products.length} products have all content checklist
+                    items added. Photography and claims still need your review.
+                  </p>
+                )}
+                {staff?.permissions.includes("content.write") && (
+                  <>
+                    <p>
+                      {
+                        serviceFields.filter(([field]) =>
+                          home.services[field]?.trim(),
+                        ).length
+                      }{" "}
+                      of {serviceFields.length} service fields added.
+                    </p>
+                    <button className="text-link" onClick={() => go("Website")}>
+                      Complete customer service pages ↗
+                    </button>
+                  </>
+                )}
+              </div>
               <div className="card-heading">
                 <div>
                   <h2>Integration overview</h2>
@@ -814,11 +907,11 @@ export default function Admin({
                   active: true,
                 },
                 {
-                  name: "Mollie",
+                  name: "Payments",
                   text: "Not connected · Demo checkout only; no real payments.",
                 },
                 {
-                  name: "Sendcloud & printers",
+                  name: "Shipping & tracking",
                   text: "Not connected · No shipping labels, tracking or printer communication.",
                 },
                 {
@@ -839,7 +932,7 @@ export default function Admin({
                     <p>{x.text}</p>
                   </div>
                   <span className="badge">
-                    {x.active ? "Actief" : "Openstaand"}
+                    {x.active ? "Active" : "Pending"}
                   </span>
                 </div>
               ))}
@@ -1021,19 +1114,28 @@ export default function Admin({
                 </label>
               </div>
               <label>
-                Release (UTC, ISO 8601)
+                Release date and time (UTC)
                 <input
-                  value={editor.releaseAt || ""}
-                  placeholder="2026-12-01T17:00:00.000Z"
+                  type="datetime-local"
+                  value={
+                    editor.releaseAt
+                      ? new Date(editor.releaseAt).toISOString().slice(0, 16)
+                      : ""
+                  }
                   onChange={(e) =>
-                    setEditor({ ...editor, releaseAt: e.target.value || null })
+                    setEditor({
+                      ...editor,
+                      releaseAt: e.target.value
+                        ? new Date(e.target.value + "Z").toISOString()
+                        : null,
+                    })
                   }
                 />
               </label>
               <p className="muted">
-                Enter a UTC timestamp ending in Z. The store displays it in
-                Europe/Amsterdam, including daylight saving time. A local date
-                picker will follow later.
+                The picker uses UTC. The store displays the release in
+                Europe/Amsterdam, including daylight saving time. Set a future
+                date when scheduling a release.
               </p>
               <label>
                 Primary image
@@ -1250,9 +1352,7 @@ export default function Admin({
                 <X />
               </button>
             </div>
-            <span className="demo-pill">
-              DEMO-ORDER · GEEN BETALING ONTVANGEN
-            </span>
+            <span className="demo-pill">DEMO ORDER · NO PAYMENT RECEIVED</span>
             <h3>{selectedOrder.name}</h3>
             <p>
               {selectedOrder.email}
@@ -1284,29 +1384,32 @@ export default function Admin({
               </p>
             </div>
             <span className="badge">{statusLabels[selectedOrder.status]}</span>
-            {["paid_demo", "paid", "packed"].includes(selectedOrder.status) && (
-              <button
-                className="button dark full"
-                disabled={busy}
-                onClick={async () => {
-                  const next =
-                    selectedOrder.status === "packed" ? "shipped" : "packed";
-                  if (
-                    await send({
-                      action: "order",
-                      id: selectedOrder.id,
-                      status: next,
-                    })
-                  )
-                    setSelectedOrder({ ...selectedOrder, status: next });
-                }}
-              >
-                {selectedOrder.status !== "packed"
-                  ? "Mark as packed"
-                  : "Mark as shipped (demo)"}{" "}
-                <ArrowRight size={16} />
-              </button>
-            )}
+            {staff?.permissions.includes("orders.write") &&
+              ["paid_demo", "paid", "packed"].includes(
+                selectedOrder.status,
+              ) && (
+                <button
+                  className="button dark full"
+                  disabled={busy}
+                  onClick={async () => {
+                    const next =
+                      selectedOrder.status === "packed" ? "shipped" : "packed";
+                    if (
+                      await send({
+                        action: "order",
+                        id: selectedOrder.id,
+                        status: next,
+                      })
+                    )
+                      setSelectedOrder({ ...selectedOrder, status: next });
+                  }}
+                >
+                  {selectedOrder.status !== "packed"
+                    ? "Mark as packed"
+                    : "Mark as shipped (demo)"}{" "}
+                  <ArrowRight size={16} />
+                </button>
+              )}
             <p className="muted">
               Ticking items is a local packing aid. Shipping labels and tracking
               are not connected yet.

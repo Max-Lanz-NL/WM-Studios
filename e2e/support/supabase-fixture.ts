@@ -184,6 +184,13 @@ const server = createServer(async (req, res) => {
         case "order_overview":
           rows = await execute("select body from public.order_overview");
           break;
+        case "orders":
+          if (role !== "service_role") throw new Error("Service role required");
+          rows = await execute(
+            "select number,total_cents from public.orders where idempotency_key=$1 and is_test=true and payment_status='paid_demo'",
+            [url.searchParams.get("idempotency_key")!.slice(3)],
+          );
+          break;
         case "content_settings":
           rows = await execute(
             "select body from public.content_settings where id='home'",

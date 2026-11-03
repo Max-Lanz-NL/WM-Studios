@@ -1,6 +1,6 @@
 "use client";
 import BrandLogo, { brandName, brandText } from "./brand-logo";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -17,6 +17,11 @@ import {
 } from "lucide-react";
 import { Product, euro, saleable, date } from "@/lib/model";
 import { useModal } from "./use-modal";
+import {
+  reconcileCart,
+  saveBrowserValue,
+  checkoutFingerprint,
+} from "@/lib/cart";
 type Line = { productId: string; sku: string; quantity: number };
 export default function Storefront({
   products,
@@ -50,42 +55,108 @@ export default function Storefront({
       number: string;
       total: number;
     } | null>(null),
-    [key, setKey] = useState(""),
     [now, setNow] = useState(0);
+  const [bagNotice, setBagNotice] = useState("");
+  const [lastReceipt, setLastReceipt] = useState<{
+    number: string;
+    total: number;
+  } | null>(null);
+  const attempt = useRef<{
+    fingerprint: string;
+    key: string;
+    cart?: string;
+  } | null>(null);
   const isProductPage = Boolean(selectedId);
   const [photo, setPhoto] = useState(0);
   const [sort, setSort] = useState("featured");
-  useModal(Boolean(panel || (selected && !isProductPage)), () => {
-    setPanel(null);
-    if (!isProductPage) setSelected(null);
-  });
+  useModal(
+    Boolean(panel || (selected && !isProductPage)),
+    () => {
+      setPanel(null);
+      if (!isProductPage) setSelected(null);
+    },
+    panel || (selected && !isProductPage ? selected.id : undefined),
+  );
   useEffect(() => {
+    let disposed = false;
+    try {
+      const receipt = JSON.parse(
+        sessionStorage.getItem("mw-last-receipt") || "null",
+      );
+      if (
+        typeof receipt?.number === "string" &&
+        Number.isSafeInteger(receipt?.total) &&
+        receipt.total >= 0
+      )
+        setLastReceipt(receipt);
+    } catch {}
     try {
       const raw = JSON.parse(localStorage.getItem("wm-bag") || "[]");
-      if (Array.isArray(raw))
-        setCart(
-          raw.filter(
-            (l) =>
-              typeof l.productId === "string" &&
-              typeof l.sku === "string" &&
-              Number.isInteger(l.quantity) &&
-              l.quantity > 0 &&
-              l.quantity <= 20,
-          ),
+      const reconciled = reconcileCart(raw, products);
+      setCart(reconciled.lines);
+      if (reconciled.changed)
+        setBagNotice(
+          "Your bag was updated to match current availability. Please review the items and quantities.",
         );
+      try {
+        const stored = JSON.parse(
+          sessionStorage.getItem("mw-checkout-attempt") || "null",
+        );
+        if (stored && typeof stored.key === "string") {
+          fetch("/api/store", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "checkout_status",
+              key: stored.key,
+            }),
+          })
+            .then(async (res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (disposed || !data?.receipt) return;
+              setConfirmation(data.receipt);
+              setLastReceipt(data.receipt);
+              try {
+                sessionStorage.setItem(
+                  "mw-last-receipt",
+                  JSON.stringify(data.receipt),
+                );
+              } catch {}
+              setPanel("bag");
+              if (stored.cart === JSON.stringify(raw))
+                setCart((current) =>
+                  JSON.stringify(current) === JSON.stringify(reconciled.lines)
+                    ? []
+                    : current,
+                );
+              try {
+                sessionStorage.removeItem("mw-checkout-attempt");
+              } catch {}
+            })
+            .catch(() => {
+              /* Keep the attempt so a later reload can recover it. */
+            });
+        }
+      } catch {}
       const w = JSON.parse(localStorage.getItem("wm-wish") || "[]");
       if (Array.isArray(w)) setWish(w.filter((v) => typeof v === "string"));
     } catch {}
-    setKey(crypto.randomUUID());
     setReady(true);
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
   }, []);
   useEffect(() => {
     if (ready) {
-      localStorage.setItem("wm-bag", JSON.stringify(cart));
-      localStorage.setItem("wm-wish", JSON.stringify(wish));
+      const saved = saveBrowserValue("wm-bag", cart);
+      saveBrowserValue("wm-wish", wish);
+      if (!saved)
+        setBagNotice(
+          "Browser storage is unavailable. Your bag may not be saved when you leave this page.",
+        );
     }
   }, [cart, wish, ready]);
   const lines = cart.flatMap((l) => {
@@ -117,6 +188,9 @@ export default function Storefront({
     (p) => !saleable(p, now || Date.now()),
   );
   const selectedColor = color || selected?.variants[0]?.color || "";
+  const audiences = products.some((p) => p.gender !== "Unisex")
+    ? ["Men", "Women"]
+    : ["Unisex"];
   function open(p: Product) {
     setSelected(p);
     setPhoto(0);
@@ -143,7 +217,6 @@ export default function Storefront({
           )
         : [...prev, { productId: selected.id, sku: size, quantity: 1 }],
     );
-    setKey(crypto.randomUUID());
     setMessage("");
     if (!isProductPage) setSelected(null);
     setPanel("bag");
@@ -166,7 +239,6 @@ export default function Storefront({
         )
         .filter((l) => l.quantity > 0),
     );
-    setKey(crypto.randomUUID());
   }
   function filterGender(g: string) {
     setGender(g);
@@ -176,33 +248,81 @@ export default function Storefront({
       ?.scrollIntoView({ behavior: "smooth" });
   }
   async function place(form: FormData) {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
+      const payload = {
+        email: String(form.get("email") || "").trim(),
+        name: String(form.get("name") || "").trim(),
+        address: ["address", "postal", "city", "country"]
+          .map((field) => String(form.get(field) || "").trim())
+          .join(", "),
+        items: cart,
+      };
+      const fingerprint = await checkoutFingerprint(payload);
+      try {
+        const stored = JSON.parse(
+          sessionStorage.getItem("mw-checkout-attempt") || "null",
+        );
+        if (
+          stored?.fingerprint === fingerprint &&
+          typeof stored.key === "string" &&
+          /^[0-9a-f-]{36}$/i.test(stored.key)
+        )
+          attempt.current = stored;
+      } catch {
+        /* Keep the in-memory attempt when storage is disabled. */
+      }
+      if (attempt.current?.fingerprint !== fingerprint)
+        attempt.current = {
+          fingerprint,
+          key: crypto.randomUUID(),
+          cart: JSON.stringify(cart),
+        };
+      try {
+        sessionStorage.setItem(
+          "mw-checkout-attempt",
+          JSON.stringify(attempt.current),
+        );
+      } catch {}
       const res = await fetch("/api/store", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "checkout",
-          key,
-          email: form.get("email"),
-          name: form.get("name"),
-          address: [
-            form.get("address"),
-            form.get("postal"),
-            form.get("city"),
-            form.get("country"),
-          ].join(", "),
-          items: cart,
+          key: attempt.current!.key,
+          ...payload,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => {
+        throw new Error(
+          "The studio returned an unexpected response. Please try again.",
+        );
+      });
       if (!res.ok) throw new Error(data.error);
       setConfirmation(data);
-      setCart([]);
-      setKey(crypto.randomUUID());
+      setLastReceipt(data);
+      try {
+        sessionStorage.setItem("mw-last-receipt", JSON.stringify(data));
+      } catch {}
+      setCart((current) =>
+        current.flatMap((line) => {
+          const submitted = payload.items.find((item) => item.sku === line.sku);
+          const quantity = line.quantity - (submitted?.quantity || 0);
+          return quantity > 0 ? [{ ...line, quantity }] : [];
+        }),
+      );
+      attempt.current = null;
+      try {
+        sessionStorage.removeItem("mw-checkout-attempt");
+      } catch {}
     } catch (e) {
-      setMessage((e as Error).message);
+      setMessage(
+        e instanceof TypeError
+          ? "We could not confirm the connection. Your bag is still here. Retry with the same details to check the same order."
+          : (e as Error).message,
+      );
     } finally {
       setBusy(false);
     }
@@ -221,7 +341,11 @@ export default function Storefront({
           consent: form.get("consent") === "on",
         }),
       });
-      const d = await r.json();
+      const d = await r.json().catch(() => {
+        throw new Error(
+          "The studio returned an unexpected response. Please try again.",
+        );
+      });
       setMessage(
         r.ok
           ? "You have joined the demo waitlist. Email notifications are not connected yet."
@@ -355,7 +479,7 @@ export default function Storefront({
                 <button
                   className="button dark full"
                   onClick={add}
-                  disabled={soldOut}
+                  disabled={soldOut || busy}
                 >
                   {soldOut ? "Sold out" : "Add to bag"} <Plus size={18} />
                 </button>
@@ -398,7 +522,7 @@ export default function Storefront({
                 </form>
               </div>
             )}
-            {message && (
+            {message && !panel && (
               <p className="notice" role="status">
                 {message}
               </p>
@@ -472,8 +596,11 @@ export default function Storefront({
         </Link>
         <nav aria-label="Main navigation">
           <Link href="/shop">Shop all</Link>
-          <button onClick={() => filterGender("Men")}>Men</button>
-          <button onClick={() => filterGender("Women")}>Women</button>
+          {audiences.map((audience) => (
+            <button key={audience} onClick={() => filterGender(audience)}>
+              {audience}
+            </button>
+          ))}
           <a href="/#brands">
             The collective <ChevronDown size={12} />
           </a>
@@ -847,6 +974,7 @@ export default function Storefront({
             <p>CLIENT SERVICES</p>
             <Link href="/info/shipping">Shipping & returns</Link>
             <Link href="/info/contact">Contact</Link>
+            <Link href="/info/faq">FAQ</Link>
             <Link href="/info/privacy">Privacy & cookies</Link>
             <Link href="/info/terms">Terms & conditions (draft)</Link>
           </div>
@@ -907,6 +1035,7 @@ export default function Storefront({
                   Search by product name
                   <input
                     autoFocus
+                    data-autofocus
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="The Essential Tee…"
@@ -933,8 +1062,11 @@ export default function Storefront({
                 >
                   Favourites
                 </button>
-                <button onClick={() => filterGender("Men")}>Men</button>
-                <button onClick={() => filterGender("Women")}>Women</button>
+                {audiences.map((audience) => (
+                  <button key={audience} onClick={() => filterGender(audience)}>
+                    {audience}
+                  </button>
+                ))}
                 <a href="/#brands" onClick={() => setPanel(null)}>
                   The collective
                 </a>
@@ -961,6 +1093,19 @@ export default function Storefront({
               </div>
             ) : (
               <>
+                {bagNotice && (
+                  <p className="notice" role="status">
+                    {bagNotice}
+                  </p>
+                )}
+                {lastReceipt && (
+                  <button
+                    className="text-link"
+                    onClick={() => setConfirmation(lastReceipt)}
+                  >
+                    View last demo confirmation ↗
+                  </button>
+                )}
                 <p className="muted">
                   {subtotal >= 15000
                     ? "Your order qualifies for free shipping."
@@ -981,6 +1126,7 @@ export default function Storefront({
                       <div className="quantity">
                         <button
                           aria-label="Decrease quantity"
+                          disabled={busy}
                           onClick={() => update(l.sku, -1)}
                         >
                           <Minus size={12} />
@@ -988,15 +1134,17 @@ export default function Storefront({
                         <span>{l.quantity}</span>
                         <button
                           aria-label="Increase quantity"
-                          disabled={l.quantity >= Math.min(20, l.v.stock)}
+                          disabled={
+                            busy || l.quantity >= Math.min(20, l.v.stock)
+                          }
                           onClick={() => update(l.sku, 1)}
                         >
                           <Plus size={12} />
                         </button>
                         <button
+                          disabled={busy}
                           onClick={() => {
                             setCart(cart.filter((c) => c.sku !== l.sku));
-                            setKey(crypto.randomUUID());
                           }}
                         >
                           Remove
@@ -1006,9 +1154,16 @@ export default function Storefront({
                   </div>
                 ))}
                 {!lines.length ? (
-                  <p className="empty">
-                    Your bag is waiting for something special.
-                  </p>
+                  <div className="empty">
+                    <p>Your bag is waiting for something special.</p>
+                    <Link
+                      className="button dark"
+                      href="/shop"
+                      onClick={() => setPanel(null)}
+                    >
+                      Explore the collection ↗
+                    </Link>
+                  </div>
                 ) : (
                   <>
                     <div className="totals">
@@ -1026,7 +1181,13 @@ export default function Storefront({
                       </p>
                     </div>
                     {checkout ? (
-                      <form action={place} className="checkout-form">
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void place(new FormData(event.currentTarget));
+                        }}
+                        className="checkout-form"
+                      >
                         <span className="demo-pill">
                           DEMO CHECKOUT — NO PAYMENT
                         </span>
@@ -1047,6 +1208,7 @@ export default function Storefront({
                             type="email"
                             required
                             autoComplete="email"
+                            maxLength={200}
                           />
                         </label>
                         <label>
@@ -1055,6 +1217,7 @@ export default function Storefront({
                             name="address"
                             required
                             autoComplete="street-address"
+                            maxLength={200}
                           />
                         </label>
                         <div className="form-row">
@@ -1064,6 +1227,7 @@ export default function Storefront({
                               name="postal"
                               required
                               autoComplete="postal-code"
+                              maxLength={20}
                             />
                           </label>
                           <label>
@@ -1072,6 +1236,7 @@ export default function Storefront({
                               name="city"
                               required
                               autoComplete="address-level2"
+                              maxLength={100}
                             />
                           </label>
                         </div>
@@ -1085,6 +1250,14 @@ export default function Storefront({
                         <p className="muted">
                           Use fictional details. This order is a test only.
                         </p>
+                        <button
+                          type="button"
+                          className="text-link"
+                          disabled={busy}
+                          onClick={() => setCheckout(false)}
+                        >
+                          ← Back to bag
+                        </button>
                         <button className="button dark" disabled={busy}>
                           {busy ? "Saving…" : "Place demo order"}{" "}
                           <ArrowRight size={16} />

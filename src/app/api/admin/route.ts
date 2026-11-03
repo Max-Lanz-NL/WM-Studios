@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin, currentStaff, rateLimit, sameOrigin } from "@/lib/auth";
 import { sessionClient } from "@/lib/supabase";
-import { saveProduct, staffAction } from "@/lib/db";
+import { saveProduct, staffAction, home as readHome } from "@/lib/db";
 import { productSchema } from "@/lib/model";
+import { homeSchema } from "@/lib/shop-content";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
@@ -54,15 +55,10 @@ export async function POST(request: Request) {
       );
     } else if (b.action === "home") {
       await requireAdmin("content.write");
-      await staffAction(
-        "home",
-        z
-          .object({
-            headline: z.string().min(2).max(150),
-            subtitle: z.string().max(500),
-          })
-          .parse(b.content),
-      );
+      const content = homeSchema.parse(b.content);
+      if (content.services === undefined)
+        content.services = (await readHome()).services;
+      await staffAction("home", content);
     } else {
       await requireAdmin();
       throw new Error("Unknown action");
