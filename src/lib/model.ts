@@ -1,4 +1,27 @@
 import { z } from "zod";
+// Browser-loaded assets only. Keep original demo URLs valid while allowing
+// owned static assets and public Supabase Storage objects.
+export const imageSchema = z
+  .string()
+  .max(2000)
+  .refine((value) => {
+    if (/^\/products\/[a-zA-Z0-9/_-]+\.(jpg|jpeg|png|webp|avif)$/i.test(value))
+      return true;
+    try {
+      const url = new URL(value);
+      return (
+        url.protocol === "https:" &&
+        !url.username &&
+        !url.password &&
+        !url.port &&
+        (url.hostname === "images.unsplash.com" ||
+          (/^[a-z0-9]+\.supabase\.co$/.test(url.hostname) &&
+            url.pathname.startsWith("/storage/v1/object/public/")))
+      );
+    } catch {
+      return false;
+    }
+  }, "Use a /products/ image path, public Supabase Storage URL or Unsplash URL");
 export const variantSchema = z.object({
   size: z.string().min(1).max(20),
   color: z.string().min(1).max(40),
@@ -25,27 +48,32 @@ export const productSchema = z
       "published",
       "archived",
     ]),
-    releaseAt: z.string().datetime().nullable(),
-    image: z
-      .string()
-      .url()
-      .refine(
-        (v) => v.startsWith("https://images.unsplash.com/"),
-        "Gebruik een Unsplash-afbeelding",
-      ),
+    releaseAt: z.iso.datetime({ offset: true }).nullable(),
+    image: imageSchema,
+    gallery: z
+      .array(
+        z.object({ url: imageSchema, alt: z.string().trim().min(1).max(200) }),
+      )
+      .max(8)
+      .optional(),
+    material: z.string().trim().max(2000).optional(),
+    fit: z.string().trim().max(2000).optional(),
+    care: z.string().trim().max(2000).optional(),
+    sizeGuide: z.string().trim().max(4000).optional(),
     variants: z.array(variantSchema).min(1).max(100),
+    version: z.number().int().positive().optional(),
   })
   .superRefine((p, c) => {
     if (p.status === "scheduled" && !p.releaseAt)
       c.addIssue({
         code: "custom",
-        message: "Een ingepland product vereist een releasedatum",
+        message: "A scheduled product requires a release date",
         path: ["releaseAt"],
       });
     if (new Set(p.variants.map((v) => v.sku)).size !== p.variants.length)
       c.addIssue({
         code: "custom",
-        message: "SKU’s moeten uniek zijn",
+        message: "SKUs must be unique",
         path: ["variants"],
       });
   });
@@ -59,7 +87,14 @@ export type Order = {
   address: string;
   total: number;
   shipping: number;
-  status: "paid_demo" | "packed" | "shipped";
+  status:
+    | "pending_payment"
+    | "paid_demo"
+    | "paid"
+    | "cancelled"
+    | "expired"
+    | "packed"
+    | "shipped";
   createdAt: string;
   items: {
     productId: string;
@@ -81,11 +116,11 @@ export function saleable(
   );
 }
 export const euro = (n: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR" }).format(
     n / 100,
   );
 export const date = (s: string) =>
-  new Intl.DateTimeFormat("nl-NL", {
+  new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Europe/Amsterdam",

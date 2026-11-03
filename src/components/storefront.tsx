@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import BrandLogo, { brandName, brandText } from "./brand-logo";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -16,6 +17,11 @@ import {
 } from "lucide-react";
 import { Product, euro, saleable, date } from "@/lib/model";
 import { useModal } from "./use-modal";
+import {
+  reconcileCart,
+  saveBrowserValue,
+  checkoutFingerprint,
+} from "@/lib/cart";
 type Line = { productId: string; sku: string; quantity: number };
 export default function Storefront({
   products,
@@ -35,6 +41,7 @@ export default function Storefront({
       products.find((p) => p.id === selectedId) || null,
     ),
     [size, setSize] = useState(""),
+    [color, setColor] = useState(""),
     [query, setQuery] = useState(""),
     [brand, setBrand] = useState("All"),
     [category, setCategory] = useState("All"),
@@ -48,39 +55,108 @@ export default function Storefront({
       number: string;
       total: number;
     } | null>(null),
-    [key, setKey] = useState(""),
     [now, setNow] = useState(0);
-  useModal(Boolean(panel || selected), () => {
-    setPanel(null);
-    setSelected(null);
-  });
+  const [bagNotice, setBagNotice] = useState("");
+  const [lastReceipt, setLastReceipt] = useState<{
+    number: string;
+    total: number;
+  } | null>(null);
+  const attempt = useRef<{
+    fingerprint: string;
+    key: string;
+    cart?: string;
+  } | null>(null);
+  const isProductPage = Boolean(selectedId);
+  const [photo, setPhoto] = useState(0);
+  const [sort, setSort] = useState("featured");
+  useModal(
+    Boolean(panel || (selected && !isProductPage)),
+    () => {
+      setPanel(null);
+      if (!isProductPage) setSelected(null);
+    },
+    panel || (selected && !isProductPage ? selected.id : undefined),
+  );
   useEffect(() => {
+    let disposed = false;
+    try {
+      const receipt = JSON.parse(
+        sessionStorage.getItem("mw-last-receipt") || "null",
+      );
+      if (
+        typeof receipt?.number === "string" &&
+        Number.isSafeInteger(receipt?.total) &&
+        receipt.total >= 0
+      )
+        setLastReceipt(receipt);
+    } catch {}
     try {
       const raw = JSON.parse(localStorage.getItem("wm-bag") || "[]");
-      if (Array.isArray(raw))
-        setCart(
-          raw.filter(
-            (l) =>
-              typeof l.productId === "string" &&
-              typeof l.sku === "string" &&
-              Number.isInteger(l.quantity) &&
-              l.quantity > 0 &&
-              l.quantity <= 20,
-          ),
+      const reconciled = reconcileCart(raw, products);
+      setCart(reconciled.lines);
+      if (reconciled.changed)
+        setBagNotice(
+          "Your bag was updated to match current availability. Please review the items and quantities.",
         );
+      try {
+        const stored = JSON.parse(
+          sessionStorage.getItem("mw-checkout-attempt") || "null",
+        );
+        if (stored && typeof stored.key === "string") {
+          fetch("/api/store", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "checkout_status",
+              key: stored.key,
+            }),
+          })
+            .then(async (res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (disposed || !data?.receipt) return;
+              setConfirmation(data.receipt);
+              setLastReceipt(data.receipt);
+              try {
+                sessionStorage.setItem(
+                  "mw-last-receipt",
+                  JSON.stringify(data.receipt),
+                );
+              } catch {}
+              setPanel("bag");
+              if (stored.cart === JSON.stringify(raw))
+                setCart((current) =>
+                  JSON.stringify(current) === JSON.stringify(reconciled.lines)
+                    ? []
+                    : current,
+                );
+              try {
+                sessionStorage.removeItem("mw-checkout-attempt");
+              } catch {}
+            })
+            .catch(() => {
+              /* Keep the attempt so a later reload can recover it. */
+            });
+        }
+      } catch {}
       const w = JSON.parse(localStorage.getItem("wm-wish") || "[]");
       if (Array.isArray(w)) setWish(w.filter((v) => typeof v === "string"));
     } catch {}
-    setKey(crypto.randomUUID());
     setReady(true);
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
   }, []);
   useEffect(() => {
     if (ready) {
-      localStorage.setItem("wm-bag", JSON.stringify(cart));
-      localStorage.setItem("wm-wish", JSON.stringify(wish));
+      const saved = saveBrowserValue("wm-bag", cart);
+      saveBrowserValue("wm-wish", wish);
+      if (!saved)
+        setBagNotice(
+          "Browser storage is unavailable. Your bag may not be saved when you leave this page.",
+        );
     }
   }, [cart, wish, ready]);
   const lines = cart.flatMap((l) => {
@@ -92,27 +168,46 @@ export default function Storefront({
     shipping = subtotal >= 15000 ? 0 : 495;
   const list = products.filter(
     (p) =>
+      p.id !== selectedId &&
       (brand === "All" || p.brand === brand) &&
       (category === "All" || p.category === category) &&
       (gender === "All" || p.gender === gender || p.gender === "Unisex") &&
-      p.name.toLowerCase().includes(query.toLowerCase()) &&
+      p.name.toLowerCase().includes(query.trim().toLowerCase()) &&
       (!wishOnly || wish.includes(p.id)),
   );
+  list.sort((a, b) =>
+    sort === "price-low"
+      ? a.price - b.price
+      : sort === "price-high"
+        ? b.price - a.price
+        : sort === "name"
+          ? a.name.localeCompare(b.name)
+          : 0,
+  );
+  const upcomingProducts = products.filter(
+    (p) => !saleable(p, now || Date.now()),
+  );
+  const selectedColor = color || selected?.variants[0]?.color || "";
+  const audiences = products.some((p) => p.gender !== "Unisex")
+    ? ["Men", "Women"]
+    : ["Unisex"];
   function open(p: Product) {
     setSelected(p);
+    setPhoto(0);
     setSize("");
+    setColor(p.variants[0]?.color || "");
     setMessage("");
   }
   function add() {
     if (!selected) return;
     const v = selected.variants.find((v) => v.sku === size);
     if (!v) {
-      setMessage("Selecteer eerst je maat.");
+      setMessage("Please select your size first.");
       return;
     }
     const existing = cart.find((l) => l.sku === size);
-    if ((existing?.quantity || 0) >= v.stock) {
-      setMessage("Deze maat heeft onvoldoende voorraad.");
+    if ((existing?.quantity || 0) >= Math.min(20, v.stock)) {
+      setMessage("There is not enough stock for this size.");
       return;
     }
     setCart((prev) =>
@@ -122,22 +217,28 @@ export default function Storefront({
           )
         : [...prev, { productId: selected.id, sku: size, quantity: 1 }],
     );
-    setKey(crypto.randomUUID());
-    setSelected(null);
+    setMessage("");
+    if (!isProductPage) setSelected(null);
     setPanel("bag");
     setCheckout(false);
   }
   function update(sku: string, change: number) {
+    const variant = products
+      .flatMap((p) => p.variants)
+      .find((v) => v.sku === sku);
+    if (!variant) return;
     setCart((prev) =>
       prev
         .map((l) =>
           l.sku === sku
-            ? { ...l, quantity: Math.min(20, l.quantity + change) }
+            ? {
+                ...l,
+                quantity: Math.min(20, variant.stock, l.quantity + change),
+              }
             : l,
         )
         .filter((l) => l.quantity > 0),
     );
-    setKey(crypto.randomUUID());
   }
   function filterGender(g: string) {
     setGender(g);
@@ -147,33 +248,81 @@ export default function Storefront({
       ?.scrollIntoView({ behavior: "smooth" });
   }
   async function place(form: FormData) {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
+      const payload = {
+        email: String(form.get("email") || "").trim(),
+        name: String(form.get("name") || "").trim(),
+        address: ["address", "postal", "city", "country"]
+          .map((field) => String(form.get(field) || "").trim())
+          .join(", "),
+        items: cart,
+      };
+      const fingerprint = await checkoutFingerprint(payload);
+      try {
+        const stored = JSON.parse(
+          sessionStorage.getItem("mw-checkout-attempt") || "null",
+        );
+        if (
+          stored?.fingerprint === fingerprint &&
+          typeof stored.key === "string" &&
+          /^[0-9a-f-]{36}$/i.test(stored.key)
+        )
+          attempt.current = stored;
+      } catch {
+        /* Keep the in-memory attempt when storage is disabled. */
+      }
+      if (attempt.current?.fingerprint !== fingerprint)
+        attempt.current = {
+          fingerprint,
+          key: crypto.randomUUID(),
+          cart: JSON.stringify(cart),
+        };
+      try {
+        sessionStorage.setItem(
+          "mw-checkout-attempt",
+          JSON.stringify(attempt.current),
+        );
+      } catch {}
       const res = await fetch("/api/store", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "checkout",
-          key,
-          email: form.get("email"),
-          name: form.get("name"),
-          address: [
-            form.get("address"),
-            form.get("postal"),
-            form.get("city"),
-            form.get("country"),
-          ].join(", "),
-          items: cart,
+          key: attempt.current!.key,
+          ...payload,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => {
+        throw new Error(
+          "The studio returned an unexpected response. Please try again.",
+        );
+      });
       if (!res.ok) throw new Error(data.error);
       setConfirmation(data);
-      setCart([]);
-      setKey(crypto.randomUUID());
+      setLastReceipt(data);
+      try {
+        sessionStorage.setItem("mw-last-receipt", JSON.stringify(data));
+      } catch {}
+      setCart((current) =>
+        current.flatMap((line) => {
+          const submitted = payload.items.find((item) => item.sku === line.sku);
+          const quantity = line.quantity - (submitted?.quantity || 0);
+          return quantity > 0 ? [{ ...line, quantity }] : [];
+        }),
+      );
+      attempt.current = null;
+      try {
+        sessionStorage.removeItem("mw-checkout-attempt");
+      } catch {}
     } catch (e) {
-      setMessage((e as Error).message);
+      setMessage(
+        e instanceof TypeError
+          ? "We could not confirm the connection. Your bag is still here. Retry with the same details to check the same order."
+          : (e as Error).message,
+      );
     } finally {
       setBusy(false);
     }
@@ -192,51 +341,273 @@ export default function Storefront({
           consent: form.get("consent") === "on",
         }),
       });
-      const d = await r.json();
+      const d = await r.json().catch(() => {
+        throw new Error(
+          "The studio returned an unexpected response. Please try again.",
+        );
+      });
       setMessage(
         r.ok
-          ? "Je staat op de demo-wachtlijst. E-mailverzending is nog niet aangesloten."
+          ? "You have joined the demo waitlist. Email notifications are not connected yet."
           : d.error,
       );
+    } catch {
+      setMessage("We could not save your request. Please try again.");
     } finally {
       setBusy(false);
     }
   }
+  function renderProduct() {
+    if (!selected) return null;
+    const photos = [
+      { url: selected.image, alt: selected.name },
+      ...(selected.gallery || []),
+    ];
+    const activePhoto = photos[photo] || photos[0];
+    const soldOut = !selected.variants.some((v) => v.stock > 0);
+    return (
+      <div
+        className={
+          isProductPage ? "product-page section" : "overlay product-overlay"
+        }
+        onClick={() => {
+          if (!isProductPage) setSelected(null);
+        }}
+      >
+        <section
+          className="product-dialog"
+          role={isProductPage ? undefined : "dialog"}
+          aria-modal={isProductPage ? undefined : true}
+          aria-label={selected.name}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {!isProductPage && (
+            <button
+              className="dialog-close"
+              aria-label="Close"
+              onClick={() => {
+                if (!isProductPage) setSelected(null);
+              }}
+            >
+              <X />
+            </button>
+          )}
+          <div className="detail-image">
+            <img
+              className="active-product-photo"
+              src={activePhoto.url}
+              alt={activePhoto.alt}
+            />
+            {photos.length > 1 && (
+              <div
+                className="gallery-thumbnails"
+                aria-label="Product photographs"
+              >
+                {photos.map((image, i) => (
+                  <button
+                    key={i}
+                    aria-label={`View photograph ${i + 1}: ${image.alt}`}
+                    aria-pressed={photo === i}
+                    onClick={() => setPhoto(i)}
+                  >
+                    <img src={image.url} alt="" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="detail-copy">
+            <p className="eyebrow">
+              {brandName(selected.brand)} / THE FIRST EDITION
+            </p>
+            {isProductPage && (
+              <Link className="product-breadcrumb" href="/shop">
+                Collection / {brandName(selected.brand)}
+              </Link>
+            )}
+            {isProductPage ? (
+              <h1>{selected.name}</h1>
+            ) : (
+              <h2>{selected.name}</h2>
+            )}
+            <p className="detail-price">
+              {euro(selected.price)} <small>incl. VAT</small>
+            </p>
+            <p>{brandText(selected.description)}</p>
+            {saleable(selected, now || Date.now()) ? (
+              <>
+                <p className="eyebrow">SELECT YOUR SIZE — {selectedColor}</p>
+                {new Set(selected.variants.map((v) => v.color)).size > 1 && (
+                  <label>
+                    Colour
+                    <select
+                      aria-label="Colour"
+                      value={selectedColor}
+                      onChange={(e) => {
+                        setColor(e.target.value);
+                        setSize("");
+                        setMessage("");
+                      }}
+                    >
+                      {Array.from(
+                        new Set(selected.variants.map((v) => v.color)),
+                      ).map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <div className="sizes">
+                  {selected.variants
+                    .filter((v) => v.color === selectedColor)
+                    .map((v) => (
+                      <button
+                        key={v.sku}
+                        disabled={!v.stock}
+                        className={size === v.sku ? "active" : ""}
+                        aria-pressed={size === v.sku}
+                        onClick={() => {
+                          setSize(v.sku);
+                          setMessage("");
+                        }}
+                      >
+                        {v.size}
+                        {!v.stock && " ×"}
+                      </button>
+                    ))}
+                </div>
+                <button
+                  className="button dark full"
+                  onClick={add}
+                  disabled={soldOut || busy}
+                >
+                  {soldOut ? "Sold out" : "Add to bag"} <Plus size={18} />
+                </button>
+                <p className="muted">
+                  {selected.price >= 15000
+                    ? "Free shipping on this item"
+                    : "Shipping €4.95 · Free from €150"}{" "}
+                  · Test store
+                </p>
+              </>
+            ) : (
+              <div className="waitlist">
+                <p className="eyebrow">COMING SOON</p>
+                <p>
+                  {selected.releaseAt && date(selected.releaseAt)} ·
+                  Europe/Amsterdam
+                </p>
+                <h3>
+                  {selected.releaseAt && now
+                    ? `${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 86400000))}D ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 3600000) % 24)}H ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 60000) % 60)}M`
+                    : "Coming soon"}
+                </h3>
+                <form action={wait}>
+                  <label>
+                    Email address
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label className="check-label">
+                    <input name="consent" type="checkbox" required /> Store my
+                    email address for this demo waitlist.
+                  </label>
+                  <button className="button dark full" disabled={busy}>
+                    Join the waitlist <ArrowUpRight size={17} />
+                  </button>
+                </form>
+              </div>
+            )}
+            {message && !panel && (
+              <p className="notice" role="status">
+                {message}
+              </p>
+            )}
+            {selected.sizeGuide && (
+              <details className="size-guide">
+                <summary>Size guide</summary>
+                <p>{selected.sizeGuide}</p>
+              </details>
+            )}
+            <details>
+              <summary>Details & care</summary>
+              {selected.material && (
+                <p>
+                  <strong>Material</strong>
+                  <br />
+                  {selected.material}
+                </p>
+              )}
+              {selected.fit && (
+                <p>
+                  <strong>Fit</strong>
+                  <br />
+                  {selected.fit}
+                </p>
+              )}
+              {selected.care && (
+                <p>
+                  <strong>Care</strong>
+                  <br />
+                  {selected.care}
+                </p>
+              )}
+              {!selected.material && !selected.fit && !selected.care && (
+                <p>
+                  Product details are being prepared. This item is a
+                  demonstration and is not available for real purchase.
+                </p>
+              )}
+            </details>
+            <details>
+              <summary>Shipping & returns</summary>
+              <p>
+                This is a test store. No physical products are delivered. The
+                final returns policy will be added before launch.
+              </p>
+              <Link className="text-link" href="/info/shipping">
+                Read shipping & returns ↗
+              </Link>
+            </details>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <>
       <a className="skip" href="#main">
-        Naar inhoud
+        Skip to content
       </a>
       <div className="announcement">
         <span>Independent by design. Collective by nature.</span>
         <span>
-          Gratis verzending vanaf €150 <ArrowUpRight size={12} />
+          Free shipping from €150 <ArrowUpRight size={12} />
         </span>
       </div>
       <header className="store-header" data-ready={ready}>
-        <Link
-          href="/"
-          className="wordmark"
-          aria-label="WM Studio Collective home"
-        >
-          <b className="monogram">WM</b>
-          <span>
-            STUDIO
-            <br />
-            COLLECTIVE
-          </span>
+        <Link href="/" className="wordmark" aria-label="Studio MW home">
+          <BrandLogo />
         </Link>
-        <nav aria-label="Hoofdnavigatie">
+        <nav aria-label="Main navigation">
           <Link href="/shop">Shop all</Link>
-          <button onClick={() => filterGender("Men")}>Men</button>
-          <button onClick={() => filterGender("Women")}>Women</button>
-          <a href="#brands">
+          {audiences.map((audience) => (
+            <button key={audience} onClick={() => filterGender(audience)}>
+              {audience}
+            </button>
+          ))}
+          <a href="/#brands">
             The collective <ChevronDown size={12} />
           </a>
-          <a href="#story">Our story</a>
+          <a href="/#story">Our story</a>
         </nav>
         <div className="header-tools">
-          <button aria-label="Zoeken" onClick={() => setPanel("search")}>
+          <button aria-label="Search" onClick={() => setPanel("search")}>
             <Search size={19} />
           </button>
           <button
@@ -252,7 +623,7 @@ export default function Storefront({
           </button>
           <button
             className="bag-button"
-            aria-label="Winkelmand"
+            aria-label="Shopping bag"
             onClick={() => {
               setPanel("bag");
               setCheckout(false);
@@ -273,50 +644,33 @@ export default function Storefront({
         </div>
       </header>
       <main id="main">
-        {!shopOnly && (
+        {isProductPage && renderProduct()}
+        {!shopOnly && !isProductPage && (
           <>
             <section className="hero">
               <img
                 className="hero-image"
                 src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=2400&q=90"
-                alt="Mode-editorial met een ontspannen stedelijke sfeer"
+                alt="Fashion editorial with a relaxed urban mood"
               />
               <div className="hero-shade" />
               <div className="hero-top">
-                <span>WM STUDIO COLLECTIVE</span>
+                <span>STUDIO MW</span>
                 <span>THE FIRST EDITION — VOL. 01</span>
               </div>
               <div className="hero-copy">
                 <p className="eyebrow">A NEW PERSPECTIVE ON EVERYDAY WEAR</p>
-                <h1>{content.headline}</h1>
-                <p>{content.subtitle}</p>
+                <h1>{brandText(content.headline)}</h1>
+                <p>{brandText(content.subtitle)}</p>
                 <a className="button light" href="#collection">
                   Discover the collection <ArrowUpRight size={18} />
                 </a>
               </div>
               <div className="hero-bottom">
                 <span>DESIGNED WITH INTENTION. WORN YOUR WAY.</span>
-                <span>
-                  01 <i /> 03
-                </span>
+                <span>THE FIRST EDITION</span>
               </div>
               <span className="hero-index">01 / THE COLLECTIVE</span>
-            </section>
-            <section className="manifesto">
-              <p className="eyebrow">DIFFERENT EXPRESSIONS. ONE COLLECTIVE.</p>
-              <h2>
-                For the way you move.
-                <br />
-                <span>For who you are becoming.</span>
-              </h2>
-              <p>
-                Een garderobe die met je meebeweegt. Onafhankelijke
-                kledinglijnen, verbonden door één visie: bewuste ontwerpen met
-                een eigen karakter.
-              </p>
-              <a href="#story">
-                Meet the collective <ArrowUpRight size={16} />
-              </a>
             </section>
           </>
         )}
@@ -324,12 +678,15 @@ export default function Storefront({
           <div className="section-heading">
             <div>
               <p className="eyebrow">THE EDIT — VOL. 01</p>
-              <h2>
+              {shopOnly && <h1 className="collection-title">The collection</h1>}
+              <h2 className={shopOnly && !wishOnly ? "sr-only" : undefined}>
                 {wishOnly
                   ? "Your favourites"
                   : shopOnly
                     ? "The collection"
-                    : "Everyday, redefined."}
+                    : isProductPage
+                      ? "Discover more pieces."
+                      : "Everyday, redefined."}
               </h2>
             </div>
             <Link href="/shop" className="text-link">
@@ -351,31 +708,54 @@ export default function Storefront({
               )}
             </div>
             <label className="brand-select">
+              Sort{" "}
+              <select
+                aria-label="Sort products"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="featured">Featured</option>
+                <option value="price-low">Price: low to high</option>
+                <option value="price-high">Price: high to low</option>
+                <option value="name">Name: A–Z</option>
+              </select>
+            </label>
+            <label className="brand-select">
               Brand{" "}
               <select
-                aria-label="Filter kledinglijn"
+                aria-label="Filter clothing line"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
               >
                 {["All", "WM STUDIO", "FORM", "OFF HOURS"].map((b) => (
-                  <option key={b}>{b}</option>
+                  <option key={b} value={b}>
+                    {brandName(b)}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
-          {(query || gender !== "All" || wishOnly) && (
+          {(query ||
+            gender !== "All" ||
+            wishOnly ||
+            category !== "All" ||
+            brand !== "All") && (
             <div className="filter-summary">
-              {query && `Zoeken: ${query} · `}
+              {query && `Search:  ${query} · `}
               {gender !== "All" && `${gender} · `}
+              {category !== "All" && `${category} · `}
+              {brand !== "All" && `${brandName(brand)} · `}
               {list.length} items{" "}
               <button
                 onClick={() => {
                   setQuery("");
                   setGender("All");
+                  setCategory("All");
+                  setBrand("All");
                   setWishOnly(false);
                 }}
               >
-                Wis filters ×
+                Clear filters ×
               </button>
             </div>
           )}
@@ -383,25 +763,16 @@ export default function Storefront({
             {list.map((p, i) => (
               <article className="product-card" key={p.id}>
                 <div className={"product-image tone-" + (i % 4)}>
-                  <Link
-                    href={"/products/" + p.slug}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      open(p);
-                    }}
-                  >
+                  <Link href={"/products/" + p.slug}>
                     <img src={p.image} alt={p.name} loading="lazy" />
                   </Link>
                   <span className="product-badge">
-                    {!saleable(p, now || Date.now())
-                      ? "COMING SOON"
-                      : i === 0
-                        ? "THE ESSENTIAL"
-                        : ""}
+                    {!saleable(p, now || Date.now()) ? "COMING SOON" : ""}
                   </span>
                   <button
                     className="wish"
-                    aria-label={`Bewaar ${p.name}`}
+                    aria-label={`Save ${p.name}`}
+                    aria-pressed={wish.includes(p.id)}
                     onClick={() =>
                       setWish(
                         wish.includes(p.id)
@@ -415,23 +786,21 @@ export default function Storefront({
                       fill={wish.includes(p.id) ? "currentColor" : "none"}
                     />
                   </button>
-                  <button className="quick-add" onClick={() => open(p)}>
-                    Discover piece <Plus size={16} />
-                  </button>
+                  {isProductPage ? (
+                    <Link className="quick-add" href={"/products/" + p.slug}>
+                      View piece <ArrowUpRight size={16} />
+                    </Link>
+                  ) : (
+                    <button className="quick-add" onClick={() => open(p)}>
+                      Discover piece <Plus size={16} />
+                    </button>
+                  )}
                 </div>
                 <div className="product-meta">
                   <div>
-                    <p>{p.brand}</p>
+                    <p>{brandName(p.brand)}</p>
                     <h3>
-                      <Link
-                        href={"/products/" + p.slug}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          open(p);
-                        }}
-                      >
-                        {p.name}
-                      </Link>
+                      <Link href={"/products/" + p.slug}>{p.name}</Link>
                     </h3>
                     <span>
                       {p.variants[0]?.color} · {p.gender}
@@ -440,19 +809,42 @@ export default function Storefront({
                   <b>{euro(p.price)}</b>
                 </div>
                 <div className="swatches">
-                  <i style={{ background: i === 0 ? "#e7e3d9" : "#292a27" }} />
-                  <i style={{ background: "#aca79a" }} />
-                  <span>{p.variants.length} maten</span>
+                  <span>
+                    {new Set(p.variants.map((v) => v.color)).size}{" "}
+                    {new Set(p.variants.map((v) => v.color)).size === 1
+                      ? "colour"
+                      : "colours"}{" "}
+                    · {new Set(p.variants.map((v) => v.size)).size}{" "}
+                    {new Set(p.variants.map((v) => v.size)).size === 1
+                      ? "size"
+                      : "sizes"}
+                  </span>
                 </div>
               </article>
             ))}
           </div>
           {!list.length && (
-            <p className="empty">Geen items gevonden. Pas je filters aan.</p>
+            <p className="empty">No items found. Adjust your filters.</p>
           )}
         </section>
-        {!shopOnly && (
+        {!shopOnly && !isProductPage && (
           <>
+            <section className="manifesto">
+              <p className="eyebrow">DIFFERENT EXPRESSIONS. ONE COLLECTIVE.</p>
+              <h2>
+                For the way you move.
+                <br />
+                <span>For who you are becoming.</span>
+              </h2>
+              <p>
+                A wardrobe that moves with you. Independent clothing lines,
+                connected by one vision: considered designs with a character of
+                their own.
+              </p>
+              <a href="#story">
+                Meet the collective <ArrowUpRight size={16} />
+              </a>
+            </section>
             <section className="brand-section section" id="brands">
               <div className="section-heading">
                 <div>
@@ -460,9 +852,9 @@ export default function Storefront({
                   <h2>Meet the collective.</h2>
                 </div>
                 <p className="muted">
-                  Jouw stijl kent geen grenzen.
+                  Your style knows no limits.
                   <br />
-                  Onze collecties ook niet.
+                  Neither do our collections.
                 </p>
               </div>
               <div className="brand-grid">
@@ -496,10 +888,10 @@ export default function Storefront({
                     <img
                       loading="lazy"
                       src={`https://images.unsplash.com/${b.img}?auto=format&fit=crop&w=900&q=85`}
-                      alt={`Editorial voor ${b.name}`}
+                      alt={`Editorial for ${brandName(b.name)}`}
                     />
                     <div>
-                      <h3>{b.name}</h3>
+                      <h3>{brandName(b.name)}</h3>
                       <p>{b.text}</p>
                     </div>
                     <ArrowUpRight size={24} />
@@ -507,22 +899,21 @@ export default function Storefront({
                 ))}
               </div>
             </section>
-            <section className="drop-section section">
-              <div>
-                <p className="eyebrow">ON THE HORIZON</p>
-                <h2>
-                  Good things
-                  <br />
-                  take their time.
-                </h2>
-                <p>
-                  Een nieuwe expressie. Een volgend hoofdstuk.
-                  <br />
-                  Ontdek wat er aankomt bij het collective.
-                </p>
-                {products
-                  .filter((p) => !saleable(p, now || Date.now()))
-                  .map((p) => (
+            {upcomingProducts.length > 0 && (
+              <section className="drop-section section">
+                <div>
+                  <p className="eyebrow">ON THE HORIZON</p>
+                  <h2>
+                    Good things
+                    <br />
+                    take their time.
+                  </h2>
+                  <p>
+                    A new expression. A new chapter.
+                    <br />
+                    Discover what is next for the collective.
+                  </p>
+                  {upcomingProducts.map((p) => (
                     <button
                       className="button dark"
                       key={p.id}
@@ -531,14 +922,15 @@ export default function Storefront({
                       Discover {p.name} <ArrowUpRight size={17} />
                     </button>
                   ))}
-              </div>
-              <div className="drop-type">
-                OFF
-                <br />
-                <span>HOURS</span>
-                <small>THE NEXT CHAPTER / COMING SOON</small>
-              </div>
-            </section>
+                </div>
+                <div className="drop-type">
+                  OFF
+                  <br />
+                  <span>HOURS</span>
+                  <small>THE NEXT CHAPTER / COMING SOON</small>
+                </div>
+              </section>
+            )}
             <section className="story section" id="story">
               <p className="eyebrow">INDEPENDENT BY DESIGN</p>
               <h2>
@@ -548,12 +940,13 @@ export default function Storefront({
               </h2>
               <div>
                 <p>
-                  WM Studio Collective begon met Willemijn en Max. Met ideeën
-                  aan de ontwerptafel en de ambitie om iets eigens op te bouwen.
+                  Studio MW began with Willemijn and Max. With ideas at the
+                  design table and the ambition to create something of their
+                  own.
                 </p>
                 <p>
-                  Verschillende kledinglijnen, één herkenbare visie. Dit is het
-                  begin van ons verhaal. En er is ruimte voor dat van jou.
+                  Different clothing lines, one recognisable vision. This is the
+                  start of our story. And there is room for yours.
                 </p>
                 <span>WILLEMIJN & MAX — THE FOUNDERS</span>
               </div>
@@ -564,9 +957,7 @@ export default function Storefront({
       <footer>
         <div className="footer-top">
           <Link href="/" className="footer-wordmark">
-            WM STUDIO
-            <br />
-            COLLECTIVE
+            <BrandLogo />
             <span>
               Independent by design.
               <br />
@@ -578,30 +969,28 @@ export default function Storefront({
             <Link href="/shop">Shop all</Link>
             <a href="/#brands">The collective</a>
             <a href="/#story">Our story</a>
-            <Link href="/admin">
-              Studio dashboard <ArrowUpRight size={12} />
-            </Link>
           </div>
           <div>
             <p>CLIENT SERVICES</p>
-            <Link href="/info/shipping">Verzending & retouren</Link>
+            <Link href="/info/shipping">Shipping & returns</Link>
             <Link href="/info/contact">Contact</Link>
+            <Link href="/info/faq">FAQ</Link>
             <Link href="/info/privacy">Privacy & cookies</Link>
-            <Link href="/info/terms">Voorwaarden (concept)</Link>
+            <Link href="/info/terms">Terms & conditions (draft)</Link>
           </div>
           <div>
             <p>THE FIRST CHAPTER</p>
             <span>
-              Ontwikkelomgeving met fictieve producten.
+              Test store with fictional products.
               <br />
-              Er worden geen echte betalingen verwerkt.
+              No real payments are processed.
             </span>
             <span className="demo-pill">DEMO ENVIRONMENT</span>
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} WM Studio Collective</span>
-          <span>NETHERLANDS · EUR € · NL</span>
+          <span>© {new Date().getFullYear()} Studio MW</span>
+          <span>NETHERLANDS · EUR € · EN</span>
           <span>WORK IN PROGRESS. ALWAYS MOVING.</span>
         </div>
       </footer>
@@ -613,10 +1002,10 @@ export default function Storefront({
             aria-modal="true"
             aria-label={
               panel === "bag"
-                ? "Winkelmand"
+                ? "Shopping bag"
                 : panel === "menu"
                   ? "Menu"
-                  : "Zoeken"
+                  : "Search"
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -628,7 +1017,7 @@ export default function Storefront({
                     ? "Find your next essential."
                     : "Explore"}
               </h2>
-              <button aria-label="Sluiten" onClick={() => setPanel(null)}>
+              <button aria-label="Close" onClick={() => setPanel(null)}>
                 <X />
               </button>
             </div>
@@ -643,9 +1032,10 @@ export default function Storefront({
                 }}
               >
                 <label>
-                  Zoek op productnaam
+                  Search by product name
                   <input
                     autoFocus
+                    data-autofocus
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="The Essential Tee…"
@@ -657,22 +1047,38 @@ export default function Storefront({
               </form>
             ) : panel === "menu" ? (
               <div className="mobile-links">
-                <Link href="/shop">Shop all</Link>
-                <button onClick={() => filterGender("Men")}>Men</button>
-                <button onClick={() => filterGender("Women")}>Women</button>
+                <Link href="/shop" onClick={() => setPanel(null)}>
+                  Shop all
+                </Link>
+                <button onClick={() => setPanel("search")}>Search</button>
+                <button
+                  onClick={() => {
+                    setWishOnly(true);
+                    setPanel(null);
+                    document
+                      .getElementById("collection")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Favourites
+                </button>
+                {audiences.map((audience) => (
+                  <button key={audience} onClick={() => filterGender(audience)}>
+                    {audience}
+                  </button>
+                ))}
                 <a href="/#brands" onClick={() => setPanel(null)}>
                   The collective
                 </a>
-                <Link href="/admin">Studio dashboard</Link>
               </div>
             ) : confirmation ? (
               <div className="confirmation">
                 <Check size={40} />
-                <h3>Bedankt. Je demo-order staat klaar.</h3>
+                <h3>Thank you. Your demo order is confirmed.</h3>
                 <p>{confirmation.number}</p>
                 <b>{euro(confirmation.total)}</b>
                 <p>
-                  Er is geen geld afgeschreven. De order is opgeslagen in het
+                  No payment was taken. Your order has been saved in the
                   dashboard.
                 </p>
                 <button
@@ -682,15 +1088,28 @@ export default function Storefront({
                     setConfirmation(null);
                   }}
                 >
-                  Verder ontdekken
+                  Continue exploring
                 </button>
               </div>
             ) : (
               <>
+                {bagNotice && (
+                  <p className="notice" role="status">
+                    {bagNotice}
+                  </p>
+                )}
+                {lastReceipt && (
+                  <button
+                    className="text-link"
+                    onClick={() => setConfirmation(lastReceipt)}
+                  >
+                    View last demo confirmation ↗
+                  </button>
+                )}
                 <p className="muted">
                   {subtotal >= 15000
-                    ? "Gratis verzending voor jouw bestelling."
-                    : `Nog ${euro(15000 - subtotal)} tot gratis verzending.`}
+                    ? "Your order qualifies for free shipping."
+                    : `${euro(15000 - subtotal)} away from free shipping.`}
                 </p>
                 <div className="shipping-progress">
                   <i style={{ width: Math.min(100, subtotal / 150) + "%" }} />
@@ -706,55 +1125,74 @@ export default function Storefront({
                       <b>{euro(l.p.price)}</b>
                       <div className="quantity">
                         <button
-                          aria-label="Minder"
+                          aria-label="Decrease quantity"
+                          disabled={busy}
                           onClick={() => update(l.sku, -1)}
                         >
                           <Minus size={12} />
                         </button>
                         <span>{l.quantity}</span>
                         <button
-                          aria-label="Meer"
+                          aria-label="Increase quantity"
+                          disabled={
+                            busy || l.quantity >= Math.min(20, l.v.stock)
+                          }
                           onClick={() => update(l.sku, 1)}
                         >
                           <Plus size={12} />
                         </button>
                         <button
+                          disabled={busy}
                           onClick={() => {
                             setCart(cart.filter((c) => c.sku !== l.sku));
-                            setKey(crypto.randomUUID());
                           }}
                         >
-                          Verwijderen
+                          Remove
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
                 {!lines.length ? (
-                  <p className="empty">Je tas wacht op iets bijzonders.</p>
+                  <div className="empty">
+                    <p>Your bag is waiting for something special.</p>
+                    <Link
+                      className="button dark"
+                      href="/shop"
+                      onClick={() => setPanel(null)}
+                    >
+                      Explore the collection ↗
+                    </Link>
+                  </div>
                 ) : (
                   <>
                     <div className="totals">
                       <p>
-                        <span>Subtotaal (incl. btw)</span>
+                        <span>Subtotal (incl. VAT)</span>
                         <b>{euro(subtotal)}</b>
                       </p>
                       <p>
-                        <span>Verzending</span>
+                        <span>Shipping</span>
                         <b>{euro(shipping)}</b>
                       </p>
                       <p>
-                        <span>Totaal</span>
+                        <span>Total</span>
                         <b>{euro(subtotal + shipping)}</b>
                       </p>
                     </div>
                     {checkout ? (
-                      <form action={place} className="checkout-form">
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void place(new FormData(event.currentTarget));
+                        }}
+                        className="checkout-form"
+                      >
                         <span className="demo-pill">
-                          DEMO CHECKOUT — GEEN BETALING
+                          DEMO CHECKOUT — NO PAYMENT
                         </span>
                         <label>
-                          Naam
+                          Name
                           <input
                             name="name"
                             required
@@ -764,20 +1202,22 @@ export default function Storefront({
                           />
                         </label>
                         <label>
-                          E-mail
+                          Email
                           <input
                             name="email"
                             type="email"
                             required
                             autoComplete="email"
+                            maxLength={200}
                           />
                         </label>
                         <label>
-                          Straat en huisnummer
+                          Street address
                           <input
                             name="address"
                             required
                             autoComplete="street-address"
+                            maxLength={200}
                           />
                         </label>
                         <div className="form-row">
@@ -787,30 +1227,39 @@ export default function Storefront({
                               name="postal"
                               required
                               autoComplete="postal-code"
+                              maxLength={20}
                             />
                           </label>
                           <label>
-                            Plaats
+                            City
                             <input
                               name="city"
                               required
                               autoComplete="address-level2"
+                              maxLength={100}
                             />
                           </label>
                         </div>
                         <label>
-                          Land
+                          Country
                           <select name="country">
-                            <option>Nederland</option>
-                            <option>België</option>
+                            <option>Netherlands</option>
+                            <option>Belgium</option>
                           </select>
                         </label>
                         <p className="muted">
-                          Gebruik fictieve gegevens. Deze bestelling is
-                          uitsluitend een test.
+                          Use fictional details. This order is a test only.
                         </p>
+                        <button
+                          type="button"
+                          className="text-link"
+                          disabled={busy}
+                          onClick={() => setCheckout(false)}
+                        >
+                          ← Back to bag
+                        </button>
                         <button className="button dark" disabled={busy}>
-                          {busy ? "Opslaan…" : "Demo-order plaatsen"}{" "}
+                          {busy ? "Saving…" : "Place demo order"}{" "}
                           <ArrowRight size={16} />
                         </button>
                       </form>
@@ -822,7 +1271,7 @@ export default function Storefront({
                           setMessage("");
                         }}
                       >
-                        Naar demo-checkout <ArrowRight size={16} />
+                        Continue to demo checkout <ArrowRight size={16} />
                       </button>
                     )}
                   </>
@@ -837,116 +1286,7 @@ export default function Storefront({
           </section>
         </div>
       )}
-      {selected && (
-        <div
-          className="overlay product-overlay"
-          onClick={() => setSelected(null)}
-        >
-          <section
-            className="product-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label={selected.name}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="dialog-close"
-              aria-label="Sluiten"
-              onClick={() => setSelected(null)}
-            >
-              <X />
-            </button>
-            <div className="detail-image">
-              <img src={selected.image} alt={selected.name} />
-            </div>
-            <div className="detail-copy">
-              <p className="eyebrow">{selected.brand} / THE FIRST EDITION</p>
-              <h2>{selected.name}</h2>
-              <p className="detail-price">
-                {euro(selected.price)} <small>incl. btw</small>
-              </p>
-              <p>{selected.description}</p>
-              {saleable(selected, now || Date.now()) ? (
-                <>
-                  <p className="eyebrow">
-                    SELECT YOUR SIZE — {selected.variants[0]?.color}
-                  </p>
-                  <div className="sizes">
-                    {selected.variants.map((v) => (
-                      <button
-                        key={v.sku}
-                        disabled={!v.stock}
-                        className={size === v.sku ? "active" : ""}
-                        onClick={() => setSize(v.sku)}
-                      >
-                        {v.size}
-                        {!v.stock && " ×"}
-                      </button>
-                    ))}
-                  </div>
-                  <button className="button dark full" onClick={add}>
-                    Add to bag <Plus size={18} />
-                  </button>
-                  <p className="muted">
-                    Gratis verzending vanaf €150 · Fictief demo-artikel
-                  </p>
-                </>
-              ) : (
-                <div className="waitlist">
-                  <p className="eyebrow">COMING SOON</p>
-                  <p>
-                    {selected.releaseAt && date(selected.releaseAt)} ·
-                    Europe/Amsterdam
-                  </p>
-                  <h3>
-                    {selected.releaseAt && now
-                      ? `${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 86400000))}D ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 3600000) % 24)}H ${Math.max(0, Math.floor((Date.parse(selected.releaseAt) - now) / 60000) % 60)}M`
-                      : "Binnenkort"}
-                  </h3>
-                  <form action={wait}>
-                    <label>
-                      E-mailadres
-                      <input
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="you@example.com"
-                      />
-                    </label>
-                    <label className="check-label">
-                      <input name="consent" type="checkbox" required /> Bewaar
-                      mijn e-mailadres voor deze demo-wachtlijst.
-                    </label>
-                    <button className="button dark full" disabled={busy}>
-                      Join the waitlist <ArrowUpRight size={17} />
-                    </button>
-                  </form>
-                </div>
-              )}
-              {message && (
-                <p className="notice" role="status">
-                  {message}
-                </p>
-              )}
-              <details>
-                <summary>Details & verzorging</summary>
-                <p>
-                  Productdetails en wasvoorschriften worden vóór livegang
-                  aangevuld. Materiaal- en duurzaamheidsclaims zijn nog niet
-                  geverifieerd.
-                </p>
-              </details>
-              <details>
-                <summary>Verzending & retouren</summary>
-                <p>
-                  Dit is een ontwikkelomgeving. Er worden geen fysieke producten
-                  geleverd. Het definitieve retourbeleid volgt vóór livegang.
-                </p>
-              </details>
-            </div>
-          </section>
-        </div>
-      )}
+      {!isProductPage && renderProduct()}
     </>
   );
 }

@@ -1,20 +1,21 @@
-import { isAdmin } from "@/lib/auth";
-import { products, orders, home, db } from "@/lib/db";
+import { currentStaff } from "@/lib/auth";
+import { products, orders, home, waitlistCount } from "@/lib/db";
+import { configured } from "@/lib/config";
+import ConfigurationNeeded from "@/components/configuration-needed";
 import Admin from "@/components/admin";
 export const dynamic = "force-dynamic";
 export default async function Page() {
-  const authorized = await isAdmin();
+  if (!configured()) return <ConfigurationNeeded />;
+  const staff = await currentStaff();
+  const can = (p: string) => !!staff?.permissions.includes(p);
   return (
     <Admin
-      authorized={authorized}
-      products={authorized ? products() : []}
-      orders={authorized ? orders() : []}
-      content={authorized ? home() : { headline: "", subtitle: "" }}
-      waitlist={
-        authorized
-          ? Number(db().prepare("SELECT COUNT(*) as n FROM waitlist").get()!.n)
-          : 0
-      }
+      authorized={!!staff}
+      staff={staff}
+      products={can("catalog.write") ? await products() : []}
+      orders={can("orders.read") ? await orders() : []}
+      content={await home()}
+      waitlist={can("catalog.write") ? await waitlistCount() : 0}
     />
   );
 }

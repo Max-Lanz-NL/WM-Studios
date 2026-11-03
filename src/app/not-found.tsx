@@ -3,10 +3,10 @@ export default function NotFound() {
   return (
     <main className="info-page">
       <p className="eyebrow">404 / OFF THE GRID</p>
-      <h1>Even uit beeld.</h1>
-      <p>Deze pagina bestaat niet of is nog niet gepubliceerd.</p>
-      <Link href="/" className="button dark">
-        Terug naar de collectie ↗
+      <h1>Out of sight for a moment.</h1>
+      <p>This page does not exist or has not been published yet.</p>
+      <Link href="/shop" className="button dark">
+        Back to the collection ↗
       </Link>
     </main>
   );

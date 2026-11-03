@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { checkout, db, visibleProducts } from "@/lib/db";
+import { checkout, joinWaitlist, checkoutReceipt } from "@/lib/db";
 import { rateLimit, sameOrigin } from "@/lib/auth";
-import { randomUUID } from "node:crypto";
-export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const b = await request.json();
+    if (b.action === "checkout_status") {
+      await rateLimit("checkout-status", 60);
+      const key = z.uuid().parse(b.key);
+      return NextResponse.json(
+        { receipt: await checkoutReceipt(key) },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     if (b.action === "checkout") {
-      rateLimit("checkout", 60);
+      await rateLimit("checkout", 60);
       const input = z
         .object({
           key: z.string().uuid(),
@@ -28,11 +34,11 @@ export async function POST(request: Request) {
             .max(30),
         })
         .parse(b);
-      const o = checkout(input);
-      return NextResponse.json({ number: o.number, total: o.total });
+      const order = await checkout(input);
+      return NextResponse.json({ number: order.number, total: order.total });
     }
     if (b.action === "waitlist") {
-      rateLimit("waitlist", 30);
+      await rateLimit("waitlist", 30);
       const input = z
         .object({
           productId: z.string().uuid(),
@@ -40,32 +46,19 @@ export async function POST(request: Request) {
           consent: z.literal(true),
         })
         .parse(b);
-      if (
-        !visibleProducts().some(
-          (p) => p.id === input.productId && p.status === "scheduled",
-        )
-      )
-        throw new Error("Release niet gevonden");
-      db()
-        .prepare("INSERT OR IGNORE INTO waitlist VALUES (?,?,?,?)")
-        .run(
-          randomUUID(),
-          input.productId,
-          input.email.toLowerCase(),
-          new Date().toISOString(),
-        );
+      await joinWaitlist(input.productId, input.email);
       return NextResponse.json({ ok: true });
     }
-    throw new Error("Onbekende actie");
+    throw new Error("Unknown action");
   } catch (e) {
     return NextResponse.json(
       {
         error:
           e instanceof z.ZodError
-            ? "Controleer de ingevulde gegevens"
+            ? "Please check the details you entered"
             : e instanceof Error
               ? e.message
-              : "Verzoek mislukt",
+              : "Request failed",
       },
       { status: 400 },
     );

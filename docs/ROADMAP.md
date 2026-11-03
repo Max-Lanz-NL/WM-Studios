@@ -1,20 +1,16 @@
-# Status tegenover de masteropdracht
+# Resterende werkzaamheden
 
-Deze oplevering is een geteste lokale tussenstand. Geen van de acht hoofdfasen is al volledig afgerond.
+De huidige migratie levert genormaliseerde Supabase-opslag, RLS, persoonlijke Auth-integratie, rollen, een bronexport/import, reserveringstransacties en databaseplanning. De bestaande webshop en basisbeheerflows zijn behouden.
 
-| Fase | Werkende tussenstand | Nog nodig |
-|---|---|---|
-| Fundament | Next.js, strict TS, validatie, lokale opslag, gedeelde beveiligde beheerlogin | Supabase PostgreSQL-migraties, Auth, rollen, RLS, Storage, MFA, aparte omgevingen |
-| Website | Homepage, shop, productdetails, filters, wishlist, responsive navigatie, conceptinformatie | Eigen productbeelden, aparte merk-/collectiepagina's, klantaccount, bestelgeschiedenis, alle definitieve informatiepagina's |
-| Producten | CRUD zonder harde verwijdering, varianten, SKU's, voorraad en status | Upload, crop, media-volgorde, maatgroepen, SEO, kosten, leveranciers, bulkacties, paginering, dynamische merken/collecties |
-| Releases | UTC-invoer, Amsterdam-weergave, Coming Soon, countdown, wachtlijst, lokale publicatieworker | Lokale datumkiezer met DST-validatie, collectiedrops, kalender, preview, goedkeuringshistorie, afmelden, bevestigingsmails en notificatie-outbox |
-| Verkoop | Persistente mand, demo-checkout, transactievoorraad, snapshots, idempotente demo-orders | Mollie-sandbox, reserveringen, expiratie, webhooks, korting, btw-specificatie, adresvalidatie, factuuradressen |
-| Verwerking | Demo-orderlijst, lokale pickhulp, statusovergangen, CSV | Gedeeltelijke fulfillment, barcodes, Sendcloud, tracking, labels, printerdialoog/bridge, audit-tijdlijn in UI |
-| Bedrijfsvoering | Databasecijfers, basisvoorraadlijst, hero-teksteditor | Retourportaal, refunds, klantenbeheer, marketing, financieel dashboard, CMS-secties, versiebeheer, transactiemail |
-| Productieklaar | Unit- en integratietests, eerste E2E-tests, robots-blokkade, lokale herstelhandleiding | Securityreview, RLS-tests, provider-tests, toegankelijkheidsaudit, performancebudget, monitoring, juridisch definitieve teksten, Vercel/Supabase-deployment |
+Op 28 oktober 2026 lokaal uitgevoerd: vier migraties toegepast, zes oorspronkelijke producten en volledig bronarchief gecontroleerd, afzonderlijke eigenaaraccounts aangemaakt, daadwerkelijke logins/sessieverversing/RLS getest, twee PostgreSQL-backends op de laatste voorraad getest en Cron-publicatie/expiratie waargenomen. Supabase advisors melden geen problemen.
 
-## Benodigde gegevens voor koppelingen
+Voor verdere acceptatie en livegang zijn nog nodig:
 
-Vraag deze pas bij de daadwerkelijke implementatie op via veilige omgevingsinstellingen, nooit in broncode of openbare issues: Supabase-projectconfiguratie, Mollie-testsleutel, Sendcloud-testomgeving, e-mailprovider en geverifieerd afzenderdomein. Daarnaast zijn bedrijfsgegevens, vastgesteld beleid, echte productinformatie en het printermodel nodig.
+- De afzonderlijke WM Studio-cloudtestdatabase en Vercel-testwebsite zijn inmiddels ingericht. De gebruiker wil de winkel verkoopklaar maken, maar nog geen echte verkoop inschakelen. Zie SALES-READINESS.md voor de actuele scope en ontbrekende bedrijfs-/productgegevens.
+- MFA-challenge en beleid voor echte medewerkers implementeren.
+- Monitoring en waarschuwingen bij uitblijvende/mislukte Cron-runs, herstart- en hersteltests onder belasting.
+- Uitgebreide multi-user-tests voor gelijktijdige catalogusmutaties, volledige toegankelijkheid en productie-loadtests.
 
-Er zijn geen betaalaccounts of zakelijke contracten aangemaakt. Er is niets live gezet en er zijn geen echte financiële transacties uitgevoerd.
+Nog niet productieklaar: Mollie/providerwebhooks, echte financiële transacties, late-betalingreconciliatie, Sendcloud, labels/printers, retouren/refunds, klantaccounts, volledige CMS/marketing, media-upload, complete audit-UI, backups/PITR en hersteltest, juridische teksten en volledige toegankelijkheid/performance-audit. Productieconfiguratie is bewust geblokkeerd.
+
+De originele volledige opdracht staat in `MASTER-PROMPT.txt`. Het hoofdadres is met afzonderlijke toestemming hersteld en gebruikt uitsluitend de nieuwe testdatabase. De applicatiemodus blijft staging.
